@@ -38,12 +38,25 @@ potato-gang/
 │   ├── config/            # 게임 설정
 │   │   └── gameConfig.ts  # Phaser 게임 설정
 │   ├── entities/          # 게임 엔티티
-│   │   └── Player.ts      # 플레이어 클래스
+│   │   ├── Player.ts      # 플레이어 클래스
+│   │   └── NPC.ts         # NPC 클래스
 │   ├── scenes/            # 게임 씬
 │   │   ├── BootScene.ts   # 초기화 씬
 │   │   ├── PreloadScene.ts # 에셋 로딩 씬
 │   │   ├── MainMenuScene.ts # 메인 메뉴 씬
 │   │   └── GameScene.ts   # 게임플레이 씬
+│   ├── systems/           # 게임 시스템
+│   │   ├── DialogueManager.ts      # 대화 시스템 관리
+│   │   ├── DialogueLoader.ts       # YAML 대화 로더
+│   │   ├── NPCManager.ts           # NPC 관리 시스템
+│   │   ├── ActionProcessor.ts      # 액션 처리 시스템
+│   │   ├── ConditionEvaluator.ts   # 조건 평가 시스템
+│   │   ├── GlobalVariableManager.ts # 글로벌 변수 관리
+│   │   └── SaveManager.ts          # 저장/로드 시스템
+│   ├── ui/                # 사용자 인터페이스
+│   │   └── DialogueBox.ts # 대화 박스 UI
+│   ├── types/             # 타입 정의
+│   │   └── GameData.ts    # 게임 데이터 타입
 │   ├── utils/             # 유틸리티
 │   │   └── constants.ts   # 게임 상수
 │   ├── main.ts            # 진입점
@@ -52,7 +65,15 @@ potato-gang/
 │   └── assets/            # 게임 에셋
 │       ├── sprites/       # 스프라이트 이미지
 │       ├── tilemaps/      # 타일맵 데이터
-│       └── ui/            # UI 에셋
+│       ├── ui/            # UI 에셋
+│       └── dialogues/     # 대화 데이터 (YAML)
+│           ├── guard.yaml     # 경비병 대화
+│           └── merchant.yaml  # 상인 대화
+├── docs/                  # 프로젝트 문서
+│   ├── README.md          # 문서 개요
+│   ├── dialogue-system.md # 대화 시스템 가이드
+│   ├── action-system.md   # 액션 시스템 가이드
+│   └── stats-system.md    # 스탯 시스템 가이드
 ├── index.html             # HTML 진입점
 ├── package.json           # 프로젝트 설정
 ├── tsconfig.json          # TypeScript 설정
@@ -67,6 +88,7 @@ potato-gang/
 
 #### `src/entities/`
 - **Player.ts**: 플레이어 캐릭터 클래스 (8방향 이동, 물리 적용)
+- **NPC.ts**: NPC 엔티티 클래스 (충돌 감지, 대화 시작)
 
 #### `src/scenes/`
 - **BootScene.ts**: 게임 초기화 및 기본 설정
@@ -74,8 +96,32 @@ potato-gang/
 - **MainMenuScene.ts**: 메인 메뉴 UI 및 네비게이션
 - **GameScene.ts**: 메인 게임플레이 로직
 
+#### `src/systems/`
+- **DialogueManager.ts**: 대화 시스템 핵심 로직
+- **DialogueLoader.ts**: YAML 대화 파일 로딩
+- **NPCManager.ts**: NPC 생성 및 관리
+- **ActionProcessor.ts**: 대화 선택지 액션 처리
+- **ConditionEvaluator.ts**: 대화 조건 평가
+- **GlobalVariableManager.ts**: 게임 상태 변수 관리
+- **SaveManager.ts**: 게임 저장/로드 기능
+
+#### `src/ui/`
+- **DialogueBox.ts**: 대화 UI 컴포넌트 (타이핑 효과, 선택지)
+
+#### `src/types/`
+- **GameData.ts**: 게임 데이터 타입 정의
+
 #### `src/utils/`
 - **constants.ts**: 게임 전역 상수 (속도, 크기 등)
+
+#### `public/assets/dialogues/`
+- **YAML 대화 파일**: NPC별 대화 트리 및 선택지 정의
+- 플레이어 스탯 변경, 조건부 대화 지원
+
+#### `docs/`
+- **dialogue-system.md**: NPC 대화 시스템 사용 가이드
+- **action-system.md**: 액션 처리 시스템 문서
+- **stats-system.md**: 플레이어 스탯 시스템 문서
 
 ## 개발 환경 설정
 
@@ -150,13 +196,39 @@ Phaser의 씬 기반 상태 관리를 활용:
 - [x] 플레이어 8방향 이동 시스템
 - [x] Arcade Physics 적용
 - [x] 픽셀 퍼펙트 렌더링 설정
+- [x] **NPC 대화 시스템** (YAML 기반)
+  - [x] 충돌 감지 및 자동 대화 시작
+  - [x] 스페이스 키 상호작용
+  - [x] 선택지 기반 대화 트리
+  - [x] 플레이어 스탯 변경 시스템
+  - [x] 타이핑 효과 UI
+  - [x] 대화 상태 저장/로드
+  - [x] 조건부 대화 분기
+  - [x] 글로벌 변수 관리
+- [x] **NPC 관리 시스템**
+  - [x] 다중 NPC 지원
+  - [x] 샘플 NPC (상인, 경비병) 구현
+- [x] **게임 저장/로드 시스템**
+  - [x] 플레이어 상태 저장
+  - [x] 대화 진행 상태 저장
+  - [x] 글로벌 변수 지속성
 
 ### 🚧 개발 예정
 - [ ] 우주복 캐릭터 스프라이트
 - [ ] 우주 테마 배경 타일맵
-- [ ] NPC 대화 시스템
-- [ ] 선택지 기반 상호작용
-- [ ] 게임 저장/로드 시스템
+- [ ] 인벤토리 시스템
+- [ ] 퀘스트 시스템
+- [ ] 전투 시스템
+- [ ] 사운드 효과 및 BGM
+
+### 🎮 대화 시스템 주요 특징
+- **YAML 기반 대화 데이터**: 비개발자도 쉽게 편집 가능
+- **충돌 기반 상호작용**: NPC와 충돌 시 자동 대화 시작
+- **스페이스 키 진행**: 직관적인 대화 진행 방식
+- **선택지 시스템**: 플레이어 선택에 따른 스탯 변경
+- **조건부 대화**: 플레이어 상태에 따른 대화 분기
+- **타이핑 효과**: 레트로 게임 느낌의 텍스트 애니메이션
+- **저장 시스템**: 대화 진행 상태 자동 저장
 
 ## 배포
 
@@ -329,23 +401,24 @@ export class SceneName extends Phaser.Scene {
 
 ## 향후 개발 계획
 
-### Phase 1: 기본 게임플레이
-- 우주복 캐릭터 스프라이트 적용
-- 우주 테마 배경 환경 구축
-- 기본적인 충돌 감지 시스템
+### Phase 1: 기본 게임플레이 ✅
+- ~~우주복 캐릭터 스프라이트 적용~~ (기본 스프라이트 적용됨)
+- ~~우주 테마 배경 환경 구축~~ (기본 환경 구축됨)
+- ~~기본적인 충돌 감지 시스템~~ (완료)
 
-### Phase 2: 인터랙션 시스템
-- NPC 대화 시스템 구현
-- 선택지 기반 상호작용 메커니즘
-- 게임 진행 상태 관리
+### Phase 2: 인터랙션 시스템 ✅
+- ~~NPC 대화 시스템 구현~~ (완료)
+- ~~선택지 기반 상호작용 메커니즘~~ (완료)
+- ~~게임 진행 상태 관리~~ (완료)
 
-### Phase 3: 게임 시스템 확장
-- 인벤토리 시스템
-- 퀘스트 시스템
-- 저장/로드 기능
+### Phase 3: 게임 시스템 확장 🚧
+- [ ] 인벤토리 시스템
+- [ ] 퀘스트 시스템
+- [x] 저장/로드 기능 (완료)
 
----
-
-**개발 환경**: TypeScript + Phaser.js + Vite  
-**배포 환경**: Vercel  
-**라이선스**: MIT 
+### Phase 4: 콘텐츠 확장 📋
+- [ ] 추가 NPC 및 대화 트리
+- [ ] 다양한 맵 및 지역
+- [ ] 전투 시스템
+- [ ] 아이템 및 장비 시스템
+- [ ] 사운드 효과 및 배경음악 
