@@ -59,7 +59,7 @@ export class DialogueLoader {
     if (!data.conversations || typeof data.conversations !== 'object') return false;
 
     // 각 대화의 기본 구조 검사
-    for (const [key, conversation] of Object.entries(data.conversations)) {
+    for (const [_key, conversation] of Object.entries(data.conversations)) {
       if (!conversation || typeof conversation !== 'object') return false;
       const conv = conversation as any;
       if (!conv.text || typeof conv.text !== 'string') return false;

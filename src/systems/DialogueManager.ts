@@ -18,8 +18,6 @@ export interface DialogueState {
 }
 
 export class DialogueManager {
-  private scene: Phaser.Scene;
-  private player: Player;
   private actionProcessor: ActionProcessor;
   private conditionEvaluator: ConditionEvaluator;
   private state: DialogueState;
@@ -30,9 +28,7 @@ export class DialogueManager {
   public onConversationChange?: (conversation: Conversation, choices: DialogueChoice[]) => void;
   public onTypingComplete?: () => void;
 
-  constructor(scene: Phaser.Scene, player: Player) {
-    this.scene = scene;
-    this.player = player;
+  constructor(_scene: Phaser.Scene, player: Player) {
     this.actionProcessor = new ActionProcessor(player);
     this.conditionEvaluator = new ConditionEvaluator(player);
     
@@ -177,7 +173,7 @@ export class DialogueManager {
   }
 
   // 시작 대화 결정
-  private getStartConversation(npcId: string, dialogueData: DialogueData): string {
+  private getStartConversation(npcId: string, _dialogueData: DialogueData): string {
     const dialogueState = SaveManager.loadGame().dialogues[npcId];
     
     // 이전에 진행된 대화가 있으면 그에 따라 결정

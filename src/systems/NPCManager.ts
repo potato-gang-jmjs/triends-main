@@ -85,7 +85,7 @@ export class NPCManager {
 
   // 플레이어가 NPC 영역에 진입했을 때
   private onPlayerEnterNPC(
-    player: any,
+    _player: any,
     interactionZone: any
   ): void {
     const npc = (interactionZone as Phaser.Physics.Arcade.Sprite).getData('npc') as NPC;

@@ -60,7 +60,7 @@ export class GameScene extends Phaser.Scene {
 
   private setupDialogueEvents(): void {
     // 대화 시작 시
-    this.dialogueManager.onDialogueStart = (npc, dialogue) => {
+    this.dialogueManager.onDialogueStart = (npc, _dialogue) => {
       console.log(`대화 시작: ${npc.npcId}`);
     };
 

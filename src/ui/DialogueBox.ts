@@ -1,20 +1,20 @@
 import Phaser from 'phaser';
-import { DIALOGUE_CONFIG, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
+import { DIALOGUE_CONFIG, GAME_WIDTH } from '../utils/constants';
 import { Conversation, DialogueChoice } from '../types/GameData';
 
 export class DialogueBox {
   private scene: Phaser.Scene;
-  private container: Phaser.GameObjects.Container;
-  private background: Phaser.GameObjects.Rectangle;
-  private nameText: Phaser.GameObjects.Text;
-  private dialogueText: Phaser.GameObjects.Text;
+  private container!: Phaser.GameObjects.Container;
+  private background!: Phaser.GameObjects.Rectangle;
+  private nameText!: Phaser.GameObjects.Text;
+  private dialogueText!: Phaser.GameObjects.Text;
   private choiceButtons: Phaser.GameObjects.Text[] = [];
-  private continueIndicator: Phaser.GameObjects.Text;
+  private continueIndicator!: Phaser.GameObjects.Text;
   private isVisible: boolean = false;
   private isTyping: boolean = false;
   private typingTween?: Phaser.Tweens.Tween;
   private fullText: string = '';
-  private currentCharIndex: number = 0;
+
 
   // 이벤트 콜백
   public onChoiceSelected?: (choiceIndex: number) => void;
@@ -116,12 +116,12 @@ export class DialogueBox {
       }
     });
 
-    // 선택지 버튼 클릭 이벤트
-    this.scene.input.on('gameobjectdown', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
-      const choiceIndex = this.choiceButtons.indexOf(gameObject as Phaser.GameObjects.Text);
-      if (choiceIndex !== -1) {
-        this.selectChoice(choiceIndex);
-      }
+    // 마우스 클릭으로 선택지 선택
+    this.choiceButtons.forEach((button, index) => {
+      button.setInteractive()
+        .on('pointerdown', (_pointer: Phaser.Input.Pointer) => {
+          this.selectChoice(index);
+        });
     });
   }
 
@@ -156,7 +156,6 @@ export class DialogueBox {
   // 타이핑 효과 시작
   private startTyping(text: string): void {
     this.fullText = text;
-    this.currentCharIndex = 0;
     this.isTyping = true;
     this.dialogueText.setText('');
     this.continueIndicator.setVisible(false);
@@ -168,9 +167,8 @@ export class DialogueBox {
       duration: text.length * DIALOGUE_CONFIG.TEXT_SPEED,
       ease: 'None',
       onUpdate: (tween) => {
-        const progress = Math.floor(tween.getValue());
+        const progress = Math.floor(tween.getValue() ?? 0);
         this.dialogueText.setText(this.fullText.substring(0, progress));
-        this.currentCharIndex = progress;
       },
       onComplete: () => {
         this.completeTyping();
@@ -271,7 +269,9 @@ export class DialogueBox {
     if (choiceIndex >= 0 && choiceIndex < this.choiceButtons.length) {
       // 선택 효과
       const selectedButton = this.choiceButtons[choiceIndex];
-      selectedButton.setStyle({ backgroundColor: '#007700' });
+      if (selectedButton) {
+        selectedButton.setStyle({ backgroundColor: '#007700' });
+      }
       
       // 잠시 후 콜백 호출
       this.scene.time.delayedCall(200, () => {

@@ -81,7 +81,7 @@ export class ActionProcessor {
 
   // 스탯 설정 (set_stat:health:100)
   private handleSetStat(parts: string[]): void {
-    if (parts.length !== 3) {
+    if (parts.length !== 3 || !parts[1] || !parts[2]) {
       console.error('set_stat 액션 형식 오류:', parts);
       return;
     }
@@ -99,7 +99,7 @@ export class ActionProcessor {
 
   // 아이템 추가 (add_item:health_potion:3)
   private handleAddItem(parts: string[]): void {
-    if (parts.length !== 3) {
+    if (parts.length !== 3 || !parts[1] || !parts[2]) {
       console.error('add_item 액션 형식 오류:', parts);
       return;
     }
@@ -117,7 +117,7 @@ export class ActionProcessor {
 
   // 아이템 제거 (remove_item:key:1)
   private handleRemoveItem(parts: string[]): void {
-    if (parts.length !== 3) {
+    if (parts.length !== 3 || !parts[1] || !parts[2]) {
       console.error('remove_item 액션 형식 오류:', parts);
       return;
     }
@@ -135,7 +135,7 @@ export class ActionProcessor {
 
   // 플래그 설정 (set_flag:shop_unlocked:true)
   private handleSetFlag(parts: string[]): void {
-    if (parts.length !== 3) {
+    if (parts.length !== 3 || !parts[1] || !parts[2]) {
       console.error('set_flag 액션 형식 오류:', parts);
       return;
     }
@@ -149,27 +149,23 @@ export class ActionProcessor {
 
   // 전역 변수 설정 (set_global:reputation:50 또는 set_global:story_progress:chapter2)
   private handleSetGlobal(parts: string[]): void {
-    if (parts.length !== 3) {
+    if (parts.length !== 3 || !parts[1] || !parts[2]) {
       console.error('set_global 액션 형식 오류:', parts);
       return;
     }
 
-    const varName = parts[1] || '';
-    const valueStr = parts[2] || '';
+    const variableName = parts[1];
+    const value = parts[2];
 
-    // 값 타입 결정
-    let value: any;
-    if (valueStr.toLowerCase() === 'true') {
-      value = true;
-    } else if (valueStr.toLowerCase() === 'false') {
-      value = false;
-    } else if (/^\-?\d+(\.\d+)?$/.test(valueStr)) {
-      value = parseFloat(valueStr);
-    } else {
-      value = valueStr; // 문자열
-    }
+         // 숫자인지 확인
+     const numValue = parseInt(value);
+     if (!isNaN(numValue)) {
+       this.globalManager.set(variableName, numValue);
+     } else {
+       this.globalManager.set(variableName, value);
+     }
 
-    this.globalManager.set(varName, value);
+    console.log(`전역 변수 설정: ${variableName} = ${value}`);
   }
 
   // 전역 변수 증가/감소 (add_global:reputation:10)
@@ -191,9 +187,9 @@ export class ActionProcessor {
     this.globalManager.add(varName, amount);
   }
 
-  // 커스텀 이벤트 트리거 (trigger_event:shop_open)
+  // 이벤트 트리거 (trigger_event:level_up)
   private handleTriggerEvent(parts: string[]): void {
-    if (parts.length !== 2) {
+    if (parts.length !== 2 || !parts[1]) {
       console.error('trigger_event 액션 형식 오류:', parts);
       return;
     }
