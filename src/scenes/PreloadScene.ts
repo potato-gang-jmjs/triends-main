@@ -7,62 +7,58 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // 로딩 바 생성
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-    
-    const progressBar = this.add.graphics();
-    const progressBox = this.add.graphics();
-    progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(width / 2 - 160, height / 2 - 30, 320, 50);
-    
-    const loadingText = this.make.text({
-      x: width / 2,
-      y: height / 2 - 50,
-      text: 'Loading...',
-      style: {
-        font: '20px monospace',
-        color: '#ffffff'
-      }
-    });
-    loadingText.setOrigin(0.5, 0.5);
-    
-    const percentText = this.make.text({
-      x: width / 2,
-      y: height / 2,
-      text: '0%',
-      style: {
-        font: '18px monospace',
-        color: '#ffffff'
-      }
-    });
-    percentText.setOrigin(0.5, 0.5);
-    
-    // 로딩 이벤트
-    this.load.on('progress', (value: number) => {
-      percentText.setText(Math.floor(value * 100) + '%');
-      progressBar.clear();
-      progressBar.fillStyle(0xffffff, 1);
-      progressBar.fillRect(width / 2 - 150, height / 2 - 20, 300 * value, 30);
-    });
-    
-    this.load.on('complete', () => {
-      progressBar.destroy();
-      progressBox.destroy();
-      loadingText.destroy();
-      percentText.destroy();
-    });
-    
-    // 여기에 에셋 로드 코드 추가
-    // 임시 에셋 (Phaser 예제에서 가져올 예정)
-    this.load.setBaseURL('https://labs.phaser.io');
-    this.load.image('sky', 'assets/skies/space3.png');
-    this.load.image('logo', 'assets/sprites/phaser3-logo.png');
-    this.load.image('red', 'assets/particles/red.png');
+    // 로딩 화면 표시
+    this.add.text(512, 384, 'Loading...', {
+      fontSize: '32px',
+      color: '#ffffff'
+    }).setOrigin(0.5);
+
+    // 임시 텍스처 생성 (실제 에셋 대신 사용)
+    this.add.graphics()
+      .fillStyle(0xff0000)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('red', 32, 32);
+
+    this.add.graphics()
+      .fillStyle(0x0000ff)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('blue', 32, 32);
+
+    this.add.graphics()
+      .fillStyle(0x00ff00)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('green', 32, 32);
+
+    this.add.graphics()
+      .fillStyle(0xffff00)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('yellow', 32, 32);
+
+    // NPC 스프라이트들
+    this.add.graphics()
+      .fillStyle(0x0080ff)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('npc', 32, 32);
+
+    this.add.graphics()
+      .fillStyle(0x8000ff)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('merchant', 32, 32);
+
+    this.add.graphics()
+      .fillStyle(0xff8000)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('guard', 32, 32);
+
+    // 배경
+    this.add.graphics()
+      .fillGradientStyle(0x87ceeb, 0x87ceeb, 0x98fb98, 0x98fb98)
+      .fillRect(0, 0, 1024, 1024)
+      .generateTexture('sky', 1024, 1024);
   }
 
   create(): void {
-    console.log('Assets loaded');
-    this.scene.start(SCENES.MAIN_MENU);
+    // 게임 씬으로 이동
+    this.scene.start(SCENES.GAME);
   }
 } 

@@ -1,0 +1,96 @@
+npc_id: "guard_001"
+conversations:
+  introduction:
+    text: "이봐! 여기서 뭐 하는 거야? 수상한 짓은 하지 말고 조용히 지나가!"
+    choices:
+      - text: "죄송합니다, 그냥 지나가는 길이에요"
+        next: "apologize"
+        action: null
+      - text: "마을을 구경하고 있었어요"
+        next: "touring"
+        action: null
+      - text: "당신이 누군데 명령하세요?"
+        next: "rude_response"
+        action: "add_stat:gold:-2"
+  
+  apologize:
+    text: "음... 그래, 괜찮다. 하지만 문제를 일으키지는 말아라. 이 마을의 평화를 지키는 게 내 일이거든."
+    choices:
+      - text: "네, 알겠습니다"
+        next: "good_citizen"
+        action: "add_stat:experience:2"
+      - text: "마을에 무슨 문제라도 있나요?"
+        next: "village_problems"
+        action: null
+  
+  touring:
+    text: "관광객이군. 그럼 괜찮다. 마을을 둘러보는 건 좋지만, 밤늦게 돌아다니지는 말아라."
+    choices:
+      - text: "조언 감사합니다"
+        next: "grateful"
+        action: "add_stat:experience:1"
+      - text: "왜 밤에 돌아다니면 안 되나요?"
+        next: "night_warning"
+        action: null
+  
+  rude_response:
+    text: "뭐?! 나는 이 마을의 경비병이다! 무례한 놈 같으니... 벌금 2골드를 내라!"
+    choices:
+      - text: "죄송합니다... (벌금 지불)"
+        next: "pay_fine"
+        action: "add_stat:gold:-2"
+      - text: "벌금을 낼 돈이 없어요"
+        next: "no_money_fine"
+        action: null
+  
+  good_citizen:
+    text: "좋아, 넌 제대로 된 시민 같다. 앞으로도 그렇게 행동하길 바란다."
+    choices:
+      - text: "네, 그렇게 하겠습니다"
+        next: "goodbye"
+        action: "set_flag:guard_respect:true"
+  
+  village_problems:
+    text: "최근에 이상한 일들이 일어나고 있어. 밤에 이상한 소리가 들린다던가... 조심해야 할 거야."
+    choices:
+      - text: "무슨 소리인가요?"
+        next: "mysterious_sounds"
+        action: null
+      - text: "조심하겠습니다"
+        next: "goodbye"
+        action: "add_stat:experience:1"
+  
+  night_warning:
+    text: "밤에는... 이상한 것들이 나타난다고 하거든. 확인된 건 아니지만, 조심하는 게 좋을 거야."
+    choices:
+      - text: "알려주셔서 감사합니다"
+        next: "goodbye"
+        action: "set_flag:night_warning_received:true"
+  
+  mysterious_sounds:
+    text: "울음소리 같은 거야... 하지만 사람 울음소리는 아니야. 뭔가 다른... 기분 나쁜 소리지."
+    choices:
+      - text: "무서우시겠어요"
+        next: "brave_guard"
+        action: null
+      - text: "조사해보셨나요?"
+        next: "investigation"
+        action: null
+  
+  pay_fine:
+    text: "그래, 이제 좀 정신을 차렸군. 앞으로는 예의를 지켜라."
+    choices:
+      - text: "네, 알겠습니다"
+        next: "goodbye"
+        action: null
+  
+  no_money_fine:
+    text: "돈도 없으면서 건방지기까지 하다니... 이번만 봐준다. 다음번엔 가만 안 둘 거야!"
+    choices:
+      - text: "죄송합니다..."
+        next: "goodbye"
+        action: "set_flag:guard_warning:true"
+  
+  goodbye:
+    text: "그럼 이만 가봐라. 문제 일으키지 말고!"
+    choices: null 
