@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENES, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { Player } from '../entities/Player.js';
+import { GinsengPlayer } from '../entities/GinsengPlayer.js';
 import { NPCManager, NPCConfig } from '../systems/NPCManager';
 import { DialogueManager } from '../systems/DialogueManager';
 import { DialogueBox } from '../ui/DialogueBox';
@@ -21,19 +22,52 @@ export class GameScene extends Phaser.Scene {
     super({ key: SCENES.GAME });
   }
 
+  preload(): void {
+    this.load.spritesheet('ginseng', 'assets/characters/ginseng_walking.png', {
+      frameWidth: 48,
+      frameHeight: 48
+    });
+  }
+
   create(): void {
     console.log('게임 씬 시작');
 
     // 배경
     const bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'sky');
     bg.setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
+
+    // 인삼이 애니메이션 등록
+    this.anims.create({
+      key: 'ginseng-walk-down',
+      frames: this.anims.generateFrameNumbers('ginseng', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-walk-left',
+      frames: this.anims.generateFrameNumbers('ginseng', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-walk-right',
+      frames: this.anims.generateFrameNumbers('ginseng', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-walk-up',
+      frames: this.anims.generateFrameNumbers('ginseng', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
     
     // 플레이어 생성
     // Player1 생성
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Player2 생성
-    this.player2 = new Player(this, GAME_WIDTH / 2 + 64, GAME_HEIGHT / 2, 'blue');
+    this.player2 = new GinsengPlayer(this, GAME_WIDTH / 2 + 64, GAME_HEIGHT / 2);
 
     // Player1 - WASD
     this.keysWASD = this.input.keyboard.addKeys({
