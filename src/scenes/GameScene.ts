@@ -79,6 +79,7 @@ export class GameScene extends Phaser.Scene {
     // 대화 시작 시
     this.dialogueManager.onDialogueStart = (npc, _dialogue) => {
       console.log(`대화 시작: ${npc.npcId}`);
+      this.haltPlayersAndResetKeys(); // 대화 시작 순간 즉시 멈춤 + 키 리셋
     };
 
     // 대화 종료 시
@@ -300,6 +301,36 @@ export class GameScene extends Phaser.Scene {
       });
     });
   }
+
+  // 모든 움직임을 즉시 멈추고, 입력키 상태를 초기화
+  private haltPlayersAndResetKeys(): void {
+    // 1) 물리 속도 정지
+    if (this.player?.sprite?.body) {
+      (this.player.sprite.body as Phaser.Physics.Arcade.Body).stop();
+      this.player.sprite.setVelocity(0, 0);
+    }
+    if (this.player2?.sprite?.body) {
+      (this.player2.sprite.body as Phaser.Physics.Arcade.Body).stop();
+      this.player2.sprite.setVelocity(0, 0);
+    }
+
+    // 2) 키 상태 리셋 (눌린 상태 해제)
+    this.resetCursorKeys(this.cursors);
+    this.resetCursorKeys(this.keysWASD);
+  }
+
+  // CursorKeys 형태(up/down/left/right/space/shift)의 키를 안전하게 reset()
+  private resetCursorKeys(keys: Phaser.Types.Input.Keyboard.CursorKeys | undefined): void {
+    if (!keys) return;
+    keys.up?.reset();
+    keys.down?.reset();
+    keys.left?.reset();
+    keys.right?.reset();
+    // CursorKeys 타입에 포함된 나머지도 있으면 함께 리셋
+    (keys as any).space?.reset?.();
+    (keys as any).shift?.reset?.();
+  }
+
 
   update(): void {
     // 대화 중이 아닐 때만 플레이어 이동
