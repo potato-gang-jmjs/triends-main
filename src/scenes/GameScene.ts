@@ -9,6 +9,8 @@ import { GlobalVariableManager } from '../systems/GlobalVariableManager';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
+  private player2!: Player;
+  private keysWASD!: Phaser.Types.Input.Keyboard.CursorKeys;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private npcManager!: NPCManager;
   private dialogueManager!: DialogueManager;
@@ -27,8 +29,23 @@ export class GameScene extends Phaser.Scene {
     bg.setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
     
     // 플레이어 생성
+    // Player1 생성
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT / 2);
-    
+
+    // Player2 생성
+    this.player2 = new Player(this, GAME_WIDTH / 2 + 64, GAME_HEIGHT / 2, 'blue');
+
+    // Player1 - WASD
+    this.keysWASD = this.input.keyboard.addKeys({
+      up: Phaser.Input.Keyboard.KeyCodes.W,
+      left: Phaser.Input.Keyboard.KeyCodes.A,
+      down: Phaser.Input.Keyboard.KeyCodes.S,
+      right: Phaser.Input.Keyboard.KeyCodes.D
+    });
+
+    // Player2 - 화살표
+    this.cursors = this.input.keyboard.createCursorKeys();
+
     // NPC 매니저 생성
     this.npcManager = new NPCManager(this, this.player);
     
@@ -132,6 +149,15 @@ export class GameScene extends Phaser.Scene {
   private setupInput(): void {
     // 기본 커서 키
     this.cursors = this.input.keyboard!.createCursorKeys();
+
+    // WASD를 CursorKeys와 동일한 shape으로 매핑
+    this.keysWASD = this.input.keyboard!.addKeys({
+      up: Phaser.Input.Keyboard.KeyCodes.W,
+      down: Phaser.Input.Keyboard.KeyCodes.S,
+      left: Phaser.Input.Keyboard.KeyCodes.A,
+      right: Phaser.Input.Keyboard.KeyCodes.D
+    }) as unknown as Phaser.Types.Input.Keyboard.CursorKeys;
+
     
     // 스페이스 키
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -203,6 +229,7 @@ export class GameScene extends Phaser.Scene {
     if (dialogueState.isActive) {
       if (dialogueState.isTyping) {
         // 타이핑 중이면 즉시 완료
+        
         this.dialogueBox.completeTyping();
       } else if (dialogueState.isWaitingForChoice) {
         // 선택지 대기 중이면 무시 (숫자 키나 클릭으로만 선택)
@@ -277,12 +304,15 @@ export class GameScene extends Phaser.Scene {
   update(): void {
     // 대화 중이 아닐 때만 플레이어 이동
     if (!this.dialogueManager.getState().isActive) {
-      this.player.update(this.cursors);
+      // player1 은 WASD, player2 는 화살표
+      this.player.update(this.keysWASD);
+      this.player2.update(this.cursors);
     }
-    
+
     // NPC 매니저 업데이트
     this.npcManager.update();
   }
+
 
 
 } 

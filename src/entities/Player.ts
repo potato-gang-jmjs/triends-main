@@ -8,7 +8,7 @@ export class Player {
   public stats: PlayerStats;
   private scene: Phaser.Scene;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, spriteKey: string = 'red') {
     this.scene = scene;
     
     // 저장된 데이터에서 스탯 로드
@@ -16,7 +16,7 @@ export class Player {
     this.stats = { ...savedData.player.stats };
     
     // 임시 플레이어 스프라이트 (빨간 사각형)
-    this.sprite = scene.physics.add.sprite(x, y, 'red');
+    this.sprite = scene.physics.add.sprite(x, y, spriteKey);
     this.sprite.setScale(2);
     this.sprite.setCollideWorldBounds(true);
     
