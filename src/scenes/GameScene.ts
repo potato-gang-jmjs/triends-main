@@ -69,16 +69,7 @@ export class GameScene extends Phaser.Scene {
     // Player2 생성
     this.player2 = new GinsengPlayer(this, GAME_WIDTH / 2 + 64, GAME_HEIGHT / 2);
 
-    // Player1 - WASD
-    this.keysWASD = this.input.keyboard.addKeys({
-      up: Phaser.Input.Keyboard.KeyCodes.W,
-      left: Phaser.Input.Keyboard.KeyCodes.A,
-      down: Phaser.Input.Keyboard.KeyCodes.S,
-      right: Phaser.Input.Keyboard.KeyCodes.D
-    });
-
-    // Player2 - 화살표
-    this.cursors = this.input.keyboard.createCursorKeys();
+    // 키 입력 설정은 setupInput()에서 일괄 처리
 
     // NPC 매니저 생성
     this.npcManager = new NPCManager(this, this.player);
