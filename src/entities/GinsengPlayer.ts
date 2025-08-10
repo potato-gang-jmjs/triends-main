@@ -3,7 +3,8 @@ import { PLAYER_SPEED, PLAYER_DIAGONAL_SPEED } from '../utils/constants';
 import { Player } from './Player.js';
 
 export class GinsengPlayer extends Player {
-  private lastDir: 'left' | 'right' | 'up' | 'down' = 'down';
+
+  private ginsengDir: 'left' | 'right' | 'up' | 'down' = 'down';
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     // Player가 spriteKey를 받도록 설계되어 있으니 'ginseng'을 넘겨 재사용
@@ -75,13 +76,13 @@ export class GinsengPlayer extends Player {
 
     if (vx === 0 && vy === 0) {
       // idle: 마지막 바라본 방향의 첫 프레임 고정
-      const first = { down: 0, left: 4, right: 8, up: 12 }[this.lastDir];
+      const first = { down: 0, left: 4, right: 8, up: 12 }[this.ginsengDir];
       this.sprite.anims.stop();
       this.sprite.setFrame(first);
     } else {
-      this.lastDir =
+      this.ginsengDir =
         Math.abs(vx) > Math.abs(vy) ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up');
-      this.sprite.anims.play('ginseng-walk-' + this.lastDir, true);
+      this.sprite.anims.play('ginseng-walk-' + this.ginsengDir, true);
     }
 
     // 원본 Player와 동일하게 1초마다 위치 저장

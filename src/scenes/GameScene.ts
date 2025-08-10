@@ -10,7 +10,7 @@ import { GlobalVariableManager } from '../systems/GlobalVariableManager';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
-  private player2!: Player;
+  private player2!: GinsengPlayer;
   private keysWASD!: Phaser.Types.Input.Keyboard.CursorKeys;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private npcManager!: NPCManager;
@@ -27,6 +27,10 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48
     });
+    this.load.spritesheet('player', 'assets/characters/astronaut_walking.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
   }
 
   create(): void {
@@ -35,6 +39,35 @@ export class GameScene extends Phaser.Scene {
     // 배경
     const bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'sky');
     bg.setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
+
+    // 우주인 애니메이션 등록
+    this.anims.create({
+      key: 'walk-down',
+      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'walk-left',
+      frames: this.anims.generateFrameNumbers('player', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'walk-right',
+      frames: this.anims.generateFrameNumbers('player', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'walk-up',
+      frames: this.anims.generateFrameNumbers('player', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
 
     // 인삼이 애니메이션 등록
     this.anims.create({
@@ -67,7 +100,7 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Player2 생성
-    this.player2 = new GinsengPlayer(this, GAME_WIDTH / 2 + 64, GAME_HEIGHT / 2);
+    this.player2 = new GinsengPlayer(this, GAME_WIDTH / 2 + 128, GAME_HEIGHT / 2);
 
     // 키 입력 설정은 setupInput()에서 일괄 처리
 
