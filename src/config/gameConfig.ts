@@ -3,11 +3,12 @@ import { BootScene } from '../scenes/BootScene';
 import { PreloadScene } from '../scenes/PreloadScene';
 import { MainMenuScene } from '../scenes/MainMenuScene';
 import { GameScene } from '../scenes/GameScene';
+import { GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 1024,
-  height: 1024,
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
   parent: 'game-container',
   backgroundColor: '#000000',
   pixelArt: true,

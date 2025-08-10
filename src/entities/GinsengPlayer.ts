@@ -19,6 +19,7 @@ export class GinsengPlayer {
     // 스프라이트 생성 (ginseng 시트 사용)
     this.sprite = scene.physics.add.sprite(x, y, 'ginseng', 0);
     this.sprite.setCollideWorldBounds(true);
+    this.sprite.setDepth(1000);
 
     // 비주얼/히트박스 (이전 확장 버전과 동일)
     this.sprite.setScale(1);
