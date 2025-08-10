@@ -7,6 +7,7 @@ import { DialogueManager } from '../systems/DialogueManager';
 import { DialogueBox } from '../ui/DialogueBox';
 import { SaveManager } from '../systems/SaveManager';
 import { GlobalVariableManager } from '../systems/GlobalVariableManager';
+import { MapManager } from '../systems/MapManager';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -17,6 +18,9 @@ export class GameScene extends Phaser.Scene {
   private dialogueManager!: DialogueManager;
   private dialogueBox!: DialogueBox;
   private spaceKey!: Phaser.Input.Keyboard.Key;
+  private zKey!: Phaser.Input.Keyboard.Key;
+  private xKey!: Phaser.Input.Keyboard.Key;
+  private mapManager!: MapManager;
 
   constructor() {
     super({ key: SCENES.GAME });
@@ -36,9 +40,14 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     console.log('게임 씬 시작');
 
-    // 배경
+    // 배경 (현재 화면 크기에 맞춤)
     const bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'sky');
     bg.setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
+
+    // 맵 로드/충돌 구성
+    this.mapManager = new MapManager(this);
+    this.mapManager.setCollisionMode('arcade');
+    this.mapManager.load('map:main');
 
     // 우주인 애니메이션 등록
     this.anims.create({
@@ -125,9 +134,10 @@ export class GameScene extends Phaser.Scene {
     // 키보드 입력 설정
     this.setupInput();
     
-    // 카메라 설정
-    this.cameras.main.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    // 카메라 설정 및 플레이어 충돌 연결
     this.cameras.main.startFollow(this.player.sprite);
+    this.mapManager.attachPlayer(this.player.sprite);
+    this.mapManager.attachPlayer(this.player2.sprite);
     
     // 게임 시작 메시지
     this.showWelcomeMessage();
@@ -220,10 +230,29 @@ export class GameScene extends Phaser.Scene {
     
     // 스페이스 키
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    // Z 키 (위치 확인)
+    this.zKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+    // X (충돌체 디버그 토글)
+    this.xKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
     
     // 스페이스 키 이벤트
     this.spaceKey.on('down', () => {
       this.handleSpaceKeyPress();
+    });
+    // Z 키 이벤트: 플레이어/인삼 좌표 출력
+    this.zKey.on('down', () => {
+      const p1 = this.player?.sprite;
+      const p2 = this.player2?.sprite;
+      const msg = `P1: (${Math.round(p1.x)}, ${Math.round(p1.y)})  P2: (${Math.round(p2.x)}, ${Math.round(p2.y)})`;
+      console.log(msg);
+      this.add.text(this.cameras.main.worldView.centerX, this.cameras.main.worldView.centerY - 60, msg, {
+        fontSize: '14px', color: '#ffffff', backgroundColor: '#000000'
+      }).setScrollFactor(0).setDepth(2000).setOrigin(0.5).setAlpha(0.9);
+    });
+
+    // X: 충돌체 디버그 표시 토글
+    this.xKey.on('down', () => {
+      this.mapManager?.toggleCollisionDebug();
     });
     
     // ESC 키로 메인 메뉴로 돌아가기

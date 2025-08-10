@@ -25,7 +25,7 @@ Potato Gang은 Phaser.js 3.90.0 기반의 탑뷰 RPG 게임입니다. 우주 테
 | **Node.js** | 18+ | 개발 환경 |
 
 ### 게임 엔진 설정
-- **해상도**: 1024x1024 픽셀
+- **해상도**: 1280x1024 픽셀 (64px 타일 20x16 가시)
 - **물리 엔진**: Arcade Physics
 - **렌더링**: Pixel Perfect (pixelArt: true)
 - **스케일링**: FIT 모드, 자동 중앙 정렬
@@ -66,6 +66,7 @@ potato-gang/
 │   └── assets/            # 게임 에셋
 │       ├── characters/    # 캐릭터 시트
 │       └── dialogues/     # 대화 데이터 (YAML)
+│       └── maps/          # 타일맵 (Spritefusion JSON)
 ├── docs/                  # 프로젝트 문서
 │   ├── README.md          # 문서 개요
 │   ├── dialogue-system.md # 대화 시스템 가이드
@@ -91,6 +92,7 @@ potato-gang/
 
 #### `docs/`
 - **movement-system.md**: 1P/2P 컨트롤 및 태그 이동 문서
+- **map-system.md**: Spritefusion 기반 맵/충돌/깊이 시스템 문서
 
 ## 개발 환경 설정
 
@@ -136,11 +138,16 @@ Phaser의 씬 기반 상태 관리를 활용:
 3. **MainMenuScene** → 메뉴 인터페이스
 4. **GameScene** → 게임플레이
 
-### 엔티티 시스템
+### 엔티티/맵 시스템
 - **1P/2P 이동**: 1P는 WASD, 2P는 방향키
 - **8방향 이동**: 대각선 이동 시 속도 보정
 - **대화 중 정지**: 두 플레이어 속도 0, 입력키 리셋
 - **월드 바운드**: 화면 경계 충돌 처리
+- **타일맵 로딩**: Spritefusion JSON → 타일 이미지 렌더링
+- **충돌**: collider=true 타일 정적 바디 생성, 1P/2P와 충돌
+- **레이어 깊이**: `layers.json`로 레이어별 depth 제어
+- **계단**: `Stairs` 레이어는 collider=false로 통로 처리
+- **디버그 키**: Z(좌표 표시), X(충돌체 표시 토글)
 
 ### 게임 설정 구조
 ```typescript
