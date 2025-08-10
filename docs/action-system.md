@@ -59,6 +59,9 @@ action: "add_stat:gold:-100;add_stat:experience:50;trigger_event:level_up"
 action: "add_stat:gold:50"        # 골드 +50
 action: "add_stat:health:-20"     # 체력 -20
 action: "add_stat:experience:10"  # 경험치 +10
+# 하트(이산형) — 1P/2P 각각 조작
+action: "add_stat:hearts_p1:-1"   # 1P 하트 -1
+action: "add_stat:hearts_p2:1"    # 2P 하트 +1
 ```
 
 #### `set_stat:스탯명:값`
@@ -67,6 +70,7 @@ action: "add_stat:experience:10"  # 경험치 +10
 ```yaml
 action: "set_stat:health:100"     # 체력을 100으로 설정
 action: "set_stat:level:5"        # 레벨을 5로 설정
+action: "set_stat:maxHearts_p1:5" # 1P 최대 하트를 5로 설정 (현재 하트는 자동 클램핑)
 ```
 
 ### 2. 아이템 조작 액션

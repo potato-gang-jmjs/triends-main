@@ -243,7 +243,7 @@ shop_menu:
   text: "무엇을 도와드릴까요?"
   choices:
     # 조건부 선택지들
-    - text: "체력 포션 구매 (10골드)"
+      - text: "체력 포션 구매 (10골드)"
       next: "buy_health_potion"
       condition: "gold>=10"
       action: "add_stat:gold:-10;add_item:health_potion:1"
@@ -258,6 +258,14 @@ shop_menu:
       
     - text: "나가기"
       next: "goodbye"
+
+    # 하트(이산형) 예시 — villager가 하트 증감
+    - text: "P1 하트 -1"
+      next: "goodbye"
+      action: "add_stat:hearts_p1:-1"
+    - text: "P2 하트 +1"
+      next: "goodbye"
+      action: "add_stat:hearts_p2:1"
 ```
 
 ## API 레퍼런스
