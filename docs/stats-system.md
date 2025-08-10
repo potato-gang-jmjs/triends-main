@@ -26,11 +26,16 @@ Potato Gang의 플레이어 스탯 관리 시스템은 확장 가능하고 자�
 
 ```typescript
 interface PlayerStats {
-  health: number;        // 현재 체력
-  maxHealth: number;     // 최대 체력
+  health: number;        // 현재 체력 (연속형)
+  maxHealth: number;     // 최대 체력 (연속형)
   gold: number;          // 보유 골드
   experience: number;    // 경험치
   level: number;         // 캐릭터 레벨
+  // === 이산형 하트 체력 (1P/2P) ===
+  hearts_p1: number;     // 1P 보유 하트 수
+  maxHearts_p1: number;  // 1P 최대 하트 수
+  hearts_p2: number;     // 2P 보유 하트 수
+  maxHearts_p2: number;  // 2P 최대 하트 수
   [key: string]: number; // 확장 가능한 추가 스탯
 }
 ```
@@ -43,7 +48,12 @@ const defaultStats: PlayerStats = {
   maxHealth: 100,
   gold: 0,
   experience: 0,
-  level: 1
+  level: 1,
+  // 하트 기반 이산형 체력 기본값
+  hearts_p1: 3,
+  maxHearts_p1: 3,
+  hearts_p2: 3,
+  maxHearts_p2: 3
 };
 ```
 
@@ -85,6 +95,11 @@ export class Player {
   
   // 스탯 정보 조회
   getStats(): PlayerStats
+
+  // === 하트 전용 헬퍼 ===
+  addHeartsP1(amount: number): void
+  setHeartsP1(value: number): void
+  setMaxHeartsP1(value: number): void
 }
 ```
 
@@ -123,6 +138,10 @@ player.addStat('health', 20);
 // 레벨 설정
 player.setStat('level', 5);
 
+// 2P 하트 감소/증가
+player.addStat('hearts_p2' as keyof PlayerStats, -1);
+player.addStat('hearts_p2' as keyof PlayerStats, +1);
+
 // 경험치 확인
 const currentExp = player.stats.experience;
 ```
@@ -134,7 +153,8 @@ const currentExp = player.stats.experience;
 player.updateStats({
   health: 80,
   gold: 150,
-  experience: 250
+  experience: 250,
+  hearts_p1: 2
 });
 
 // 레벨업 처리
@@ -205,6 +225,8 @@ player.addStat('health', -10);  // 체력 -10
 
 **특별 규칙:**
 - `health`는 `maxHealth`를 초과할 수 없음
+- `hearts_p1`은 `0..maxHearts_p1` 범위를 벗어나지 않음
+- `hearts_p2`는 `0..maxHearts_p2` 범위를 벗어나지 않음
 - 음수 값으로 스탯 감소 가능
 
 #### `setStat(statName: keyof PlayerStats, value: number): void`
@@ -435,6 +457,8 @@ SaveManager.saveGame({ player: { ... } });  // 활성 슬롯으로 저장
 SaveManager.clearSave(2);                   // 슬롯 2 삭제
 SaveManager.listSlots();                    // 슬롯 목록/미리보기 조회
 SaveManager.initializeSlot(1);              // 새 게임 데이터로 슬롯 초기화
+// 하트 변경은 부분 업데이트 권장
+SaveManager.updatePlayerStats({ hearts_p1: 2 });
 ```
 
 ### 미리보기(Preview) 정보

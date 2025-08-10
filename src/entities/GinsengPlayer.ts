@@ -115,7 +115,7 @@ export class GinsengPlayer {
 
   public updateStats(newStats: Partial<PlayerStats>): void {
     Object.assign(this.stats, newStats);
-    SaveManager.updatePlayerStats(this.stats);
+    SaveManager.updatePlayerStats(newStats);
     console.log('플레이어 스탯 업데이트:', newStats);
   }
 
@@ -126,7 +126,14 @@ export class GinsengPlayer {
       if (statName === 'health' && this.stats.health > this.stats.maxHealth) {
         this.stats.health = this.stats.maxHealth;
       }
-      SaveManager.updatePlayerStats(this.stats);
+      // 하트 클램핑 (2P)
+      if (statName === 'hearts_p2') {
+        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
+      }
+      if (statName === 'hearts_p1') {
+        this.stats.hearts_p1 = Math.max(0, Math.min(this.stats.hearts_p1, this.stats.maxHearts_p1 ?? this.stats.hearts_p1));
+      }
+      SaveManager.updatePlayerStats({ [statName]: this.stats[statName] } as Partial<PlayerStats>);
       console.log(`${statName} ${amount > 0 ? '+' : ''}${amount}:`, this.stats[statName]);
     }
   }
@@ -138,9 +145,35 @@ export class GinsengPlayer {
       if (statName === 'health' && this.stats.health > this.stats.maxHealth) {
         this.stats.health = this.stats.maxHealth;
       }
-      SaveManager.updatePlayerStats(this.stats);
+      // 하트 관련 클램프
+      if (statName === 'hearts_p2') {
+        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
+      }
+      if (statName === 'hearts_p1') {
+        this.stats.hearts_p1 = Math.max(0, Math.min(this.stats.hearts_p1, this.stats.maxHearts_p1 ?? this.stats.hearts_p1));
+      }
+      if (statName === 'maxHearts_p2' && this.stats.maxHearts_p2 < this.stats.hearts_p2) {
+        this.stats.hearts_p2 = this.stats.maxHearts_p2;
+      }
+      if (statName === 'maxHearts_p1' && this.stats.maxHearts_p1 < this.stats.hearts_p1) {
+        this.stats.hearts_p1 = this.stats.maxHearts_p1;
+      }
+      SaveManager.updatePlayerStats({ [statName]: this.stats[statName] } as Partial<PlayerStats>);
       console.log(`${statName} 설정:`, this.stats[statName]);
     }
+  }
+
+  // ───────── 하트 전용 헬퍼 (2P) ─────────
+  public addHeartsP2(amount: number): void {
+    this.addStat('hearts_p2' as keyof PlayerStats, amount);
+  }
+
+  public setHeartsP2(value: number): void {
+    this.setStat('hearts_p2' as keyof PlayerStats, value);
+  }
+
+  public setMaxHeartsP2(value: number): void {
+    this.setStat('maxHearts_p2' as keyof PlayerStats, value);
   }
 
   public savePosition(): void {

@@ -53,7 +53,12 @@ export class SaveManager {
           maxHealth: 100,
           gold: 0,
           experience: 0,
-          level: 1
+          level: 1,
+          // 하트 기반 이산형 체력 초기값 (1P/2P 각각 3개)
+          hearts_p1: 3,
+          maxHearts_p1: 3,
+          hearts_p2: 3,
+          maxHearts_p2: 3
         },
         position: { x: 512, y: 512 },
         inventory: []
@@ -151,6 +156,17 @@ export class SaveManager {
       if (parsed.version !== SaveManager.VERSION) {
         console.warn('저장 데이터 버전 불일치, 기본값으로 초기화');
         return this.createNewGameData();
+      }
+      // 누락된 스탯 기본값 보정 (하트 등 신규 필드)
+      const s = parsed.player?.stats as PlayerStats;
+      if (s) {
+        if (typeof s.hearts_p1 !== 'number') s.hearts_p1 = 3;
+        if (typeof s.maxHearts_p1 !== 'number') s.maxHearts_p1 = 3;
+        if (typeof s.hearts_p2 !== 'number') s.hearts_p2 = 3;
+        if (typeof s.maxHearts_p2 !== 'number') s.maxHearts_p2 = 3;
+        // 클램핑
+        s.hearts_p1 = Math.max(0, Math.min(s.hearts_p1, s.maxHearts_p1));
+        s.hearts_p2 = Math.max(0, Math.min(s.hearts_p2, s.maxHearts_p2));
       }
       return parsed;
     } catch (error) {

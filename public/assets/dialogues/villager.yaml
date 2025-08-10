@@ -1,0 +1,31 @@
+npc_id: "villager_001"
+conversations:
+  introduction:
+    text: "안녕! 나는 마을 주민이야. 하트를 조절해줄까?"
+    choices:
+      - text: "P1 하트 -1"
+        next: "result"
+        action: "add_stat:hearts_p1:-1"
+      - text: "P1 하트 +1"
+        next: "result"
+        action: "add_stat:hearts_p1:1"
+      - text: "P2 하트 -1"
+        next: "result"
+        action: "add_stat:hearts_p2:-1"
+      - text: "P2 하트 +1"
+        next: "result"
+        action: "add_stat:hearts_p2:1"
+      - text: "그만 할래"
+        next: null
+        action: null
+
+  result:
+    text: "완료! 더 해줄까?"
+    choices:
+      - text: "계속 조절하기"
+        next: "introduction"
+        action: null
+      - text: "끝내기"
+        next: null
+        action: null
+

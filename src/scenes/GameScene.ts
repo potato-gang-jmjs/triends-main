@@ -25,6 +25,13 @@ export class GameScene extends Phaser.Scene {
   private mapManager!: MapManager;
   private isTransitioning = false;
   private portalHintContainer!: Phaser.GameObjects.Container;
+  
+  // 하트 UI
+  private heartsTextP1!: Phaser.GameObjects.Text;
+  private heartsTextP2!: Phaser.GameObjects.Text;
+  private lastHeartsP1 = '';
+  private lastHeartsP2 = '';
+  private uiFrameTicker = 0;
 
   constructor() {
     super({ key: SCENES.GAME });
@@ -149,6 +156,9 @@ export class GameScene extends Phaser.Scene {
 
     // 게임 시작 메시지
     this.showWelcomeMessage();
+
+    // 하트 UI 생성 (좌상단)
+    this.createHeartsUI();
   }
 
   private setupDialogueEvents(): void {
@@ -311,6 +321,23 @@ export class GameScene extends Phaser.Scene {
       this.player.addStat('experience', 5);
     });
 
+    // 하트 디버그: P1 하트 -1
+    this.input.keyboard!.on('keydown-F10', () => {
+      this.player.addStat('hearts_p1' as any, -1);
+      console.log('P1 하트 -1');
+    });
+    // 하트 디버그: P1 하트 +1
+    this.input.keyboard!.on('keydown-F11', () => {
+      this.player.addStat('hearts_p1' as any, 1);
+      console.log('P1 하트 +1');
+    });
+    // 하트 디버그: P2 하트 -1/+1 토글
+    this.input.keyboard!.on('keydown-F12', () => {
+      // 임시: -1
+      this.player2.addStat('hearts_p2' as any, -1);
+      console.log('P2 하트 -1');
+    });
+
     // 전역 변수 디버그
     this.input.keyboard!.on('keydown-F7', () => {
       GlobalVariableManager.getInstance().debugPrint();
@@ -453,6 +480,36 @@ export class GameScene extends Phaser.Scene {
     this.portalHintContainer?.setVisible(!!portal);
   }
 
+  private createHeartsUI(): void {
+    const style = { fontSize: '18px', color: '#ff5a5a', fontFamily: 'monospace' } as Phaser.Types.GameObjects.Text.TextStyle;
+    this.heartsTextP1 = this.add.text(12, 10, '', style).setScrollFactor(0).setDepth(3000).setOrigin(0, 0);
+    this.heartsTextP2 = this.add.text(12, 34, '', { ...style, color: '#ffa0a0' }).setScrollFactor(0).setDepth(3000).setOrigin(0, 0);
+    this.refreshHeartsUI(true);
+  }
+
+  private formatHearts(current: number, max: number): string {
+    const filled = Math.max(0, Math.min(current, max));
+    const empty = Math.max(0, max - filled);
+    return `P1: ${'\u2665'.repeat(filled)}${'\u2661'.repeat(empty)}`; // 기본 P1 라벨; P2는 호출부에서 치환
+  }
+
+  private refreshHeartsUI(force = false): void {
+    const data = SaveManager.loadGame();
+    const s = data.player.stats as any;
+    const p1StrRaw = this.formatHearts(Number(s.hearts_p1 || 0), Number(s.maxHearts_p1 || 0));
+    const p2StrRaw = this.formatHearts(Number(s.hearts_p2 || 0), Number(s.maxHearts_p2 || 0));
+    const p1Str = p1StrRaw.replace(/^P1:/, 'P1:');
+    const p2Str = p2StrRaw.replace(/^P1:/, 'P2:');
+    if (force || p1Str !== this.lastHeartsP1) {
+      this.heartsTextP1.setText(p1Str);
+      this.lastHeartsP1 = p1Str;
+    }
+    if (force || p2Str !== this.lastHeartsP2) {
+      this.heartsTextP2.setText(p2Str);
+      this.lastHeartsP2 = p2Str;
+    }
+  }
+
   private async startDialogueWithNPC(npc: any): Promise<void> {
     const success = await this.dialogueManager.startDialogue(npc);
     if (!success) {
@@ -549,6 +606,12 @@ export class GameScene extends Phaser.Scene {
 
     // 포탈 힌트 업데이트
     this.updatePortalHint();
+
+    // 하트 UI 주기적 갱신 (약 4회/초)
+    this.uiFrameTicker = (this.uiFrameTicker + 1) % 15;
+    if (this.uiFrameTicker === 0) {
+      this.refreshHeartsUI();
+    }
   }
 
 

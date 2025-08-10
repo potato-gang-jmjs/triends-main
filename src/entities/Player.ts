@@ -145,7 +145,7 @@ export class Player {
   // 스탯 업데이트
   public updateStats(newStats: Partial<PlayerStats>): void {
     Object.assign(this.stats, newStats);
-    SaveManager.updatePlayerStats(this.stats);
+    SaveManager.updatePlayerStats(newStats);
     console.log('플레이어 스탯 업데이트:', newStats);
   }
 
@@ -155,12 +155,19 @@ export class Player {
       // @ts-ignore - 인덱스 접근 허용
       this.stats[statName] += amount;
 
-      // 체력은 최대값을 초과할 수 없음
+      // 연속형 체력 클램핑
       if (statName === 'health' && this.stats.health > this.stats.maxHealth) {
         this.stats.health = this.stats.maxHealth;
       }
+      // 이산형 하트 클램핑
+      if (statName === 'hearts_p1') {
+        this.stats.hearts_p1 = Math.max(0, Math.min(this.stats.hearts_p1, this.stats.maxHearts_p1 ?? this.stats.hearts_p1));
+      }
+      if (statName === 'hearts_p2') {
+        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
+      }
 
-      SaveManager.updatePlayerStats(this.stats);
+      SaveManager.updatePlayerStats({ [statName]: this.stats[statName] } as Partial<PlayerStats>);
       console.log(`${statName} ${amount > 0 ? '+' : ''}${amount}:`, this.stats[statName]);
     }
   }
@@ -174,10 +181,36 @@ export class Player {
       if (statName === 'health' && this.stats.health > this.stats.maxHealth) {
         this.stats.health = this.stats.maxHealth;
       }
+      // 하트 관련 클램핑
+      if (statName === 'hearts_p1') {
+        this.stats.hearts_p1 = Math.max(0, Math.min(this.stats.hearts_p1, this.stats.maxHearts_p1 ?? this.stats.hearts_p1));
+      }
+      if (statName === 'hearts_p2') {
+        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
+      }
+      if (statName === 'maxHearts_p1' && this.stats.maxHearts_p1 < this.stats.hearts_p1) {
+        this.stats.hearts_p1 = this.stats.maxHearts_p1;
+      }
+      if (statName === 'maxHearts_p2' && this.stats.maxHearts_p2 < this.stats.hearts_p2) {
+        this.stats.hearts_p2 = this.stats.maxHearts_p2;
+      }
 
-      SaveManager.updatePlayerStats(this.stats);
+      SaveManager.updatePlayerStats({ [statName]: this.stats[statName] } as Partial<PlayerStats>);
       console.log(`${statName} 설정:`, this.stats[statName]);
     }
+  }
+
+  // ───────── 하트 전용 헬퍼 (1P) ─────────
+  public addHeartsP1(amount: number): void {
+    this.addStat('hearts_p1' as keyof PlayerStats, amount);
+  }
+
+  public setHeartsP1(value: number): void {
+    this.setStat('hearts_p1' as keyof PlayerStats, value);
+  }
+
+  public setMaxHeartsP1(value: number): void {
+    this.setStat('maxHearts_p1' as keyof PlayerStats, value);
   }
 
   // 위치 저장

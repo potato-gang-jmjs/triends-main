@@ -5,6 +5,11 @@ export interface PlayerStats {
   gold: number;
   experience: number;
   level: number;
+  // 이산형 하트 기반 체력 (1P/2P 분리)
+  hearts_p1: number;
+  maxHearts_p1: number;
+  hearts_p2: number;
+  maxHearts_p2: number;
   [key: string]: number; // 확장 가능한 스탯
 }
 
