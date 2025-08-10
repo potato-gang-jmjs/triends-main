@@ -1,0 +1,9 @@
+[
+  {
+    "id": "to_forest_01",
+    "area": { "x": 27, "y": 1, "width": 2, "height": 2 },
+    "target": { "mapId": "forest", "spawn": { "x": 3, "y": 7 } },
+    "options": { "fadeMs": 400 }
+  }
+]
+

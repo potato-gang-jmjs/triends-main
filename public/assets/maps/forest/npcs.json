@@ -1,0 +1,5 @@
+[
+  { "npcId": "villager_001", "pos": { "x": 6, "y": 7 } },
+  { "npcId": "merchant_001", "pos": { "x": 10, "y": 5 } }
+]
+

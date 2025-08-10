@@ -3,6 +3,8 @@ import { SCENES, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { Player } from '../entities/Player.js';
 import { GinsengPlayer } from '../entities/GinsengPlayer.js';
 import { NPCManager, NPCConfig } from '../systems/NPCManager';
+import { NPC_DEFINITIONS } from '../data/NPCDefinitions';
+import { NPCSpawnDef } from '../types/MapTypes';
 import { DialogueManager } from '../systems/DialogueManager';
 import { DialogueBox } from '../ui/DialogueBox';
 import { SaveManager } from '../systems/SaveManager';
@@ -21,6 +23,8 @@ export class GameScene extends Phaser.Scene {
   private zKey!: Phaser.Input.Keyboard.Key;
   private xKey!: Phaser.Input.Keyboard.Key;
   private mapManager!: MapManager;
+  private isTransitioning = false;
+  private portalHintContainer!: Phaser.GameObjects.Container;
 
   constructor() {
     super({ key: SCENES.GAME });
@@ -47,7 +51,7 @@ export class GameScene extends Phaser.Scene {
     // 맵 로드/충돌 구성
     this.mapManager = new MapManager(this);
     this.mapManager.setCollisionMode('arcade');
-    this.mapManager.load('map:main');
+    this.mapManager.load('map:main').then(() => this.loadNPCsForMap('main'));
 
     // 우주인 애니메이션 등록
     this.anims.create({
@@ -128,17 +132,21 @@ export class GameScene extends Phaser.Scene {
     // 대화 시스템 이벤트 연결
     this.setupDialogueEvents();
     
-    // NPC들 배치
-    this.setupNPCs();
+    // NPC들 배치는 맵 로드 완료 후 처리 (.then에서 호출)
     
     // 키보드 입력 설정
     this.setupInput();
+    // 포탈 힌트 UI 생성
+    this.createPortalHintUI();
     
     // 카메라 설정 및 플레이어 충돌 연결
     this.cameras.main.startFollow(this.player.sprite);
     this.mapManager.attachPlayer(this.player.sprite);
     this.mapManager.attachPlayer(this.player2.sprite);
     
+    // 입력이 비활성화 상태가 아니도록 보정
+    if (this.input?.keyboard) this.input.keyboard.enabled = true;
+
     // 게임 시작 메시지
     this.showWelcomeMessage();
   }
@@ -181,38 +189,46 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
-  private setupNPCs(): void {
-    // NPC 설정 데이터
-    const npcConfigs: NPCConfig[] = [
-      {
-        npcId: 'merchant_001',
-        dialogueId: 'merchant',
-        x: 300,
-        y: 300,
-        spriteKey: 'merchant'
-      },
-      {
-        npcId: 'guard_001',
-        dialogueId: 'guard',
-        x: 700,
-        y: 400,
-        spriteKey: 'guard'
-      },
-      {
-        npcId: 'villager_001',
-        dialogueId: 'merchant', // 임시로 상인 대화 재사용
-        x: 500,
-        y: 600,
-        spriteKey: 'blue'
+  private async loadNPCsForMap(mapId: string): Promise<void> {
+    // 기존 NPC 정리 후 재생성(그룹 포함)
+    if (this.npcManager) {
+      this.npcManager.destroy();
+    }
+    this.npcManager = new NPCManager(this, this.player);
+
+    try {
+      const res = await fetch(`assets/maps/${mapId}/npcs.json`);
+      if (!res.ok) {
+        console.warn(`NPC 데이터 없음: assets/maps/${mapId}/npcs.json`);
+        return;
       }
-    ];
+      const list = (await res.json()) as NPCSpawnDef[];
+      const tileSize = this.mapManager.getTileSize();
 
-    // NPC들 생성
-    npcConfigs.forEach(config => {
-      this.npcManager.addNPC(config);
-    });
+      const placed: NPCConfig[] = list
+        .map((spawn) => {
+          const def = NPC_DEFINITIONS[spawn.npcId];
+          if (!def) {
+            console.warn(`정의되지 않은 NPC: ${spawn.npcId}`);
+            return null;
+          }
+          const dialogueId = spawn.overrides?.dialogueId ?? def.dialogueId;
+          const spriteKey = spawn.overrides?.spriteKey ?? def.spriteKey;
+          return {
+            npcId: def.npcId,
+            dialogueId,
+            spriteKey,
+            x: spawn.pos.x * tileSize + tileSize / 2,
+            y: spawn.pos.y * tileSize + tileSize / 2
+          } as NPCConfig;
+        })
+        .filter(Boolean) as NPCConfig[];
 
-    console.log(`${npcConfigs.length}개의 NPC가 배치되었습니다.`);
+      placed.forEach(cfg => this.npcManager.addNPC(cfg));
+      console.log(`${placed.length}개의 NPC가 배치되었습니다. (map:${mapId})`);
+    } catch (e) {
+      console.warn('NPC 데이터 로드 실패:', e);
+    }
   }
 
   private setupInput(): void {
@@ -328,12 +344,113 @@ export class GameScene extends Phaser.Scene {
         this.dialogueManager.advance();
       }
     } else {
-      // 대화 중이 아니면 근처 NPC와 대화 시도
+      // 대화 중이 아니면: 1) 포탈 체크 → 2) NPC 상호작용 시도
+      if (!this.isTransitioning && this.tryPortalInteraction()) {
+        return;
+      }
       const nearbyNPC = this.npcManager.getCurrentInteractableNPC();
       if (nearbyNPC) {
         this.startDialogueWithNPC(nearbyNPC);
       }
     }
+  }
+
+  private tryPortalInteraction(): boolean {
+    const portalManager = this.mapManager.getPortalManager();
+    const tileSize = this.mapManager.getTileSize();
+    const p1 = new Phaser.Math.Vector2(this.player.sprite.x, this.player.sprite.y);
+    const p2 = new Phaser.Math.Vector2(this.player2.sprite.x, this.player2.sprite.y);
+    const portal = portalManager.findPortalIfBothInside(p1, p2, tileSize);
+    if (!portal) return false;
+    this.performPortalTransition(portal);
+    return true;
+  }
+
+  private performPortalTransition(portal: any): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+    const fadeMs = portal.options?.fadeMs ?? 300;
+
+    // 입력 잠금 및 플레이어 정지
+    this.haltPlayersAndResetKeys();
+    this.input.keyboard?.enabled && (this.input.keyboard.enabled = false);
+
+    // 사전 프리페치: 실패 시 전환 취소 (페이드 전)
+    const nextMapId = portal.target.mapId;
+    const nextKey = 'map:' + nextMapId;
+    fetch(`assets/maps/${nextMapId}/map.json`, { cache: 'no-cache' })
+      .then((pre) => {
+        if (!pre.ok) throw new Error('map.json not found');
+
+        // 페이드 아웃 후 전환 수행
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, async () => {
+          this.mapManager.unload();
+          const ok = await this.mapManager.load(nextKey);
+          if (!ok) {
+            console.error('맵 로드 실패, 전환 취소');
+            this.cameras.main.fadeIn(fadeMs, 0, 0, 0);
+            this.input.keyboard && (this.input.keyboard.enabled = true);
+            this.isTransitioning = false;
+            return;
+          }
+
+          const tileSize = this.mapManager.getTileSize();
+          const spawnX = portal.target.spawn.x * tileSize + tileSize / 2;
+          const spawnY = portal.target.spawn.y * tileSize + tileSize / 2;
+          this.player.sprite.setPosition(spawnX, spawnY);
+          this.player2.sprite.setPosition(spawnX + tileSize * 2, spawnY);
+
+          await this.loadNPCsForMap(nextMapId);
+
+          // 새 맵 충돌체에 플레이어 재연결
+          this.mapManager.attachPlayer(this.player.sprite);
+          this.mapManager.attachPlayer(this.player2.sprite);
+
+          this.cameras.main.startFollow(this.player.sprite);
+
+          this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => {
+            this.input.keyboard && (this.input.keyboard.enabled = true);
+            this.isTransitioning = false;
+          });
+          this.cameras.main.fadeIn(fadeMs, 0, 0, 0);
+        });
+        this.cameras.main.fadeOut(fadeMs, 0, 0, 0);
+      })
+      .catch((err) => {
+        console.error('다음 맵 프리페치 실패, 전환 취소:', err);
+        this.input.keyboard && (this.input.keyboard.enabled = true);
+        this.isTransitioning = false;
+      });
+  }
+
+  private createPortalHintUI(): void {
+    const width = 340;
+    const height = 36;
+    const container = this.add.container(this.cameras.main.width / 2, this.cameras.main.height - 180);
+    const bg = this.add.rectangle(0, 0, width, height, 0x002233, 0.8).setStrokeStyle(2, 0x00ffff, 0.9);
+    const text = this.add.text(0, 0, '두 플레이어가 포탈에 있습니다. 스페이스로 이동', {
+      fontSize: '16px',
+      color: '#ccffff',
+      fontFamily: 'monospace'
+    }).setOrigin(0.5);
+    container.add([bg, text]);
+    container.setScrollFactor(0);
+    container.setDepth(2000);
+    container.setVisible(false);
+    this.portalHintContainer = container;
+  }
+
+  private updatePortalHint(): void {
+    if (this.isTransitioning || this.dialogueManager.getState().isActive) {
+      this.portalHintContainer?.setVisible(false);
+      return;
+    }
+    const portalManager = this.mapManager.getPortalManager();
+    const tileSize = this.mapManager.getTileSize();
+    const p1 = new Phaser.Math.Vector2(this.player.sprite.x, this.player.sprite.y);
+    const p2 = new Phaser.Math.Vector2(this.player2.sprite.x, this.player2.sprite.y);
+    const portal = portalManager.findPortalIfBothInside(p1, p2, tileSize);
+    this.portalHintContainer?.setVisible(!!portal);
   }
 
   private async startDialogueWithNPC(npc: any): Promise<void> {
@@ -422,13 +539,16 @@ export class GameScene extends Phaser.Scene {
   update(): void {
     // 대화 중이 아닐 때만 플레이어 이동
     if (!this.dialogueManager.getState().isActive) {
-      // player1 은 WASD, player2 는 화살표
-      this.player.update(this.keysWASD);
-      this.player2.update(this.cursors);
+      // player1 은 화살표, player2 는 WASD
+      this.player.update(this.cursors);
+      this.player2.update(this.keysWASD);
     }
 
     // NPC 매니저 업데이트
     this.npcManager.update();
+
+    // 포탈 힌트 업데이트
+    this.updatePortalHint();
   }
 
 

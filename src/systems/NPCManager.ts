@@ -16,6 +16,8 @@ export class NPCManager {
   private npcGroup: Phaser.Physics.Arcade.Group;
   private interactionGroup: Phaser.Physics.Arcade.Group;
   private player: Player;
+  private overlapCollider: Phaser.Physics.Arcade.Collider | null = null;
+  private worldStepHandler: (() => void) | null = null;
 
   constructor(scene: Phaser.Scene, player: Player) {
     this.scene = scene;
@@ -30,7 +32,7 @@ export class NPCManager {
 
   private setupCollisions(): void {
     // 플레이어와 NPC 상호작용 영역 충돌 감지
-    this.scene.physics.add.overlap(
+    this.overlapCollider = this.scene.physics.add.overlap(
       this.player.sprite,
       this.interactionGroup,
       this.onPlayerEnterNPC.bind(this),
@@ -39,7 +41,8 @@ export class NPCManager {
     );
 
     // 플레이어가 NPC 영역에서 나갈 때 감지 (매 프레임 체크)
-    this.scene.physics.world.on('worldstep', this.checkPlayerExitNPC.bind(this));
+    this.worldStepHandler = this.checkPlayerExitNPC.bind(this);
+    this.scene.physics.world.on('worldstep', this.worldStepHandler);
   }
 
   // NPC 추가
@@ -135,6 +138,14 @@ export class NPCManager {
       npc.destroy();
     });
     this.npcs.clear();
+    if (this.overlapCollider) {
+      this.overlapCollider.destroy();
+      this.overlapCollider = null;
+    }
+    if (this.worldStepHandler) {
+      this.scene.physics.world.off('worldstep', this.worldStepHandler);
+      this.worldStepHandler = null;
+    }
     this.npcGroup.destroy(true);
     this.interactionGroup.destroy(true);
   }

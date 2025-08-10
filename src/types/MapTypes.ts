@@ -26,3 +26,58 @@ export interface TileMetaRule {
 
 export type TilesMeta = Record<string, TileMetaRule>;
 
+// ───── Portal types ─────
+export interface PortalArea {
+  /** tile grid x of the top-left cell */
+  x: number;
+  /** tile grid y of the top-left cell */
+  y: number;
+  /** width in tiles */
+  width: number;
+  /** height in tiles */
+  height: number;
+}
+
+export interface PortalTargetSpawn {
+  /** tile grid x of spawn cell */
+  x: number;
+  /** tile grid y of spawn cell */
+  y: number;
+}
+
+export interface PortalTarget {
+  /** target map id (used as `map:<mapId>` for cache key) */
+  mapId: string;
+  /** spawn tile position in target map */
+  spawn: PortalTargetSpawn;
+}
+
+export interface PortalOptions {
+  /** optional fade duration in ms when transitioning */
+  fadeMs?: number;
+}
+
+export interface PortalDef {
+  id: string;
+  area: PortalArea;
+  target: PortalTarget;
+  options?: PortalOptions;
+}
+
+// ───── NPC types for data-driven spawns ─────
+export interface NPCDefinition {
+  npcId: string;
+  dialogueId: string;
+  spriteKey: string;
+  interactionRadius?: number;
+}
+
+export interface NPCSpawnDef {
+  npcId: string;
+  pos: { x: number; y: number }; // tile coordinates
+  overrides?: {
+    dialogueId?: string;
+    spriteKey?: string;
+  };
+}
+
