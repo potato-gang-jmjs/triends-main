@@ -58,6 +58,7 @@ export class Player {
 
     this.sprite = scene.physics.add.sprite(x, y, hasAstronaut ? ASTRONAUT_TEX : spriteKey, 0);
     this.sprite.setCollideWorldBounds(true);
+    this.sprite.setDepth(1000); // players always on top (temporarily overriding front layers)
 
     if (hasAstronaut) {
       // 64x64 시트에 맞는 히트박스(논리 32x48)와 오리진

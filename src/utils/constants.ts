@@ -1,6 +1,6 @@
-// Game dimensions
-export const GAME_WIDTH = 1024;
-export const GAME_HEIGHT = 1024;
+// Game dimensions (fit Spritefusion 64px tiles; 20x16 tiles visible)
+export const GAME_WIDTH = 1280; // 64 * 20
+export const GAME_HEIGHT = 1024; // 64 * 16
 
 // Scene keys
 export const SCENES = {

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SCENES } from '../utils/constants';
+import { SCENES, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -50,11 +50,19 @@ export class PreloadScene extends Phaser.Scene {
       .fillRect(0, 0, 32, 32)
       .generateTexture('guard', 32, 32);
 
-    // 배경
+    // 배경 (현재 화면 크기에 맞춰 생성)
     this.add.graphics()
       .fillGradientStyle(0x87ceeb, 0x87ceeb, 0x98fb98, 0x98fb98)
-      .fillRect(0, 0, 1024, 1024)
-      .generateTexture('sky', 1024, 1024);
+      .fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
+      .generateTexture('sky', GAME_WIDTH, GAME_HEIGHT);
+
+    // ───── 맵/타일 에셋 로드 (Spritefusion: 64px 타일 가정) ─────
+    this.load.spritesheet('tiles', 'assets/spritesheet/spritesheet.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    // 맵을 map별 폴더 구조로 관리 (예: assets/maps/main/map.json)
+    this.load.json('map:main', 'assets/maps/main/map.json');
   }
 
   create(): void {

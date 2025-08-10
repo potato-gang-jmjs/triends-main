@@ -33,6 +33,14 @@ NPC와의 상호작용을 위한 YAML 기반 대화 관리 시스템
 
 ### 🎮 [이동/컨트롤 시스템 (Movement System)](./movement-system.md)
 1P/2P 동시 조작과 태그 이동(텔레포트) 시스템
+### 🗺️ [맵/타일맵 시스템 (Map System)](./map-system.md)
+Spritefusion JSON 기반 타일맵 로딩/렌더링/충돌 시스템
+
+- 레이어별 depth 제어(layers.json)
+- collider=true 타일 충돌(Arcade Static Bodies)
+- 계단(Stairs) 통로 처리(collider:false)
+- X 키 충돌체 디버그 토글 / Z 키 좌표 표시
+
 
 - 1P: WASD, 2P: 방향키
 - 대화 중 이동 정지 및 입력키 리셋

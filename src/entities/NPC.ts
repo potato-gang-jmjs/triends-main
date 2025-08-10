@@ -28,6 +28,7 @@ export class NPC {
     this.sprite.setScale(1.5);
     this.sprite.setImmovable(true);
     this.sprite.body!.setSize(32, 32); // 충돌 박스 크기
+    this.sprite.setDepth(1000);
 
     // 상호작용 범위 생성 (투명한 원형 영역)
     this.interactionZone = scene.physics.add.sprite(x, y, '');
@@ -56,6 +57,7 @@ export class NPC {
     );
     this.indicator.setOrigin(0.5);
     this.indicator.setVisible(false);
+    this.indicator.setDepth(1100);
   }
 
   // 플레이어가 근처에 있을 때 호출
