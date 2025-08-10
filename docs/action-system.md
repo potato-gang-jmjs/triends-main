@@ -133,6 +133,39 @@ action: "trigger_event:level_up"      # 레벨업 처리
 action: "trigger_event:boss_fight"    # 보스전 시작
 ```
 
+### 6. 이동 액션 (1P/2P 태그 이동)
+
+#### `teleport:x:y[:target]`
+- 지정 좌표로 순간 이동합니다.
+- `target`(선택): `p1` | `p2` | `both` (기본값 `p1`)
+
+```yaml
+# 1P를 (512,256)으로 이동
+action: "teleport:512:256"
+
+# 2P를 (640,640)으로 이동
+action: "teleport:640:640:p2"
+
+# 두 플레이어를 같은 지점으로 이동
+action: "teleport:320:480:both"
+```
+
+#### `teleport_tag:tag_id[:target]`
+- 사전에 정의된 태그 지점으로 순간 이동합니다.
+- `target`(선택): `p1` | `p2` | `both` (기본값 `p1`)
+
+```yaml
+# 성소로 두 플레이어 이동
+action: "teleport_tag:temple:both"
+
+# 2P만 항구로 이동
+action: "teleport_tag:harbor:p2"
+```
+
+동작 공통 규칙:
+- 이동 직후 속도를 0으로 만들고, 현재 방향의 idle 프레임으로 정지합니다.
+- 위치 저장은 기존 주기 규칙을 따릅니다.
+
 ## 시스템 구조
 
 ### ActionProcessor 클래스
@@ -160,6 +193,9 @@ export class ActionProcessor {
   private handleSetGlobal(parts: string[]): void
   private handleAddGlobal(parts: string[]): void
   private handleTriggerEvent(parts: string[]): void
+  // 이동 액션 핸들러 (teleport / teleport_tag)
+  // private handleTeleport(parts: string[]): void
+  // private handleTeleportTag(parts: string[]): void
 }
 ```
 
@@ -194,14 +230,6 @@ conversations:
       - text: "체력 포션 (10골드)"
         action: "add_stat:gold:-10;add_item:health_potion:1"
         condition: "gold>=10"
-        
-      - text: "마나 포션 (15골드)"
-        action: "add_stat:gold:-15;add_item:mana_potion:1"
-        condition: "gold>=15"
-        
-      - text: "특별 패키지 (50골드)"
-        action: "add_stat:gold:-50;add_item:health_potion:3;add_item:mana_potion:2;add_stat:experience:10"
-        condition: "gold>=50"
 ```
 
 ### 2. 코드에서 직접 사용
@@ -216,30 +244,9 @@ actionProcessor.processAction("add_stat:gold:100");
 // 다중 액션 실행
 actionProcessor.processAction("add_stat:health:50;set_flag:healed:true");
 
-// 복잡한 액션 체인
-actionProcessor.processAction(
-  "add_stat:gold:-200;add_item:legendary_sword:1;set_flag:sword_obtained:true;trigger_event:achievement_unlock"
-);
-```
-
-### 3. 조건부 액션 설계
-
-```yaml
-# 레벨에 따른 다른 보상
-level_up_reward:
-  text: "레벨업 보상을 받으세요!"
-  choices:
-    - text: "초보자 보상"
-      condition: "level<=5"
-      action: "add_stat:gold:10;add_item:health_potion:1"
-      
-    - text: "중급자 보상"
-      condition: "level>5&&level<=10"
-      action: "add_stat:gold:25;add_item:mana_potion:2"
-      
-    - text: "고급자 보상"
-      condition: "level>10"
-      action: "add_stat:gold:50;add_item:legendary_item:1"
+// 이동 액션 실행
+actionProcessor.processAction("teleport:512:256:both");
+actionProcessor.processAction("teleport_tag:temple:p2");
 ```
 
 ## 확장 방법
@@ -254,52 +261,15 @@ private executeAction(action: string): void {
 
   switch (actionType) {
     // 기존 액션들...
-    
-    case 'heal_full':
-      this.handleHealFull(parts);
-      break;
-      
     case 'teleport':
       this.handleTeleport(parts);
       break;
-      
-    case 'spawn_enemy':
-      this.handleSpawnEnemy(parts);
+    case 'teleport_tag':
+      this.handleTeleportTag(parts);
       break;
-      
     default:
       console.warn(`알 수 없는 액션 타입: ${actionType}`);
   }
-}
-
-// 새로운 핸들러 메서드들
-private handleHealFull(parts: string[]): void {
-  this.player.setStat('health', this.player.stats.maxHealth);
-  console.log('체력이 완전히 회복되었습니다!');
-}
-
-private handleTeleport(parts: string[]): void {
-  if (parts.length !== 3) {
-    console.error('teleport 액션 형식: teleport:x:y');
-    return;
-  }
-  
-  const x = parseInt(parts[1]);
-  const y = parseInt(parts[2]);
-  
-  this.player.sprite.setPosition(x, y);
-  console.log(`플레이어가 (${x}, ${y})로 이동했습니다.`);
-}
-
-private handleSpawnEnemy(parts: string[]): void {
-  if (parts.length !== 2) {
-    console.error('spawn_enemy 액션 형식: spawn_enemy:enemy_type');
-    return;
-  }
-  
-  const enemyType = parts[1];
-  // 적 생성 로직 구현
-  console.log(`${enemyType} 적이 생성되었습니다.`);
 }
 ```
 
@@ -326,43 +296,24 @@ private expandMacro(action: string): string {
 private validateAction(action: string): boolean {
   const parts = action.split(':');
   const actionType = parts[0];
-  
   switch (actionType) {
     case 'add_stat':
     case 'set_stat':
       return parts.length === 3 && !isNaN(parseInt(parts[2]));
-      
     case 'add_item':
     case 'remove_item':
       return parts.length === 3 && !isNaN(parseInt(parts[2]));
-      
     case 'set_flag':
       return parts.length === 3 && ['true', 'false'].includes(parts[2]);
-      
     case 'trigger_event':
       return parts.length === 2;
-      
+    case 'teleport':
+      return parts.length === 3 || parts.length === 4; // x:y[:target]
+    case 'teleport_tag':
+      return parts.length === 2 || parts.length === 3; // tag[:target]
     default:
       return false;
   }
-}
-
-public processAction(actionString: string | null | undefined): void {
-  if (!actionString) return;
-
-  const actions = actionString.split(';');
-  
-  // 모든 액션 검증
-  const invalidActions = actions.filter(action => !this.validateAction(action.trim()));
-  if (invalidActions.length > 0) {
-    console.error('잘못된 액션 형식:', invalidActions);
-    return;
-  }
-  
-  // 검증된 액션만 실행
-  actions.forEach(action => {
-    this.executeAction(action.trim());
-  });
 }
 ```
 
@@ -388,6 +339,8 @@ actionProcessor.processAction("add_stat:gold:50;set_flag:rich:true");
 | `remove_item` | `remove_item:아이템ID:수량` | 아이템 제거 | `remove_item:key:1` |
 | `set_flag` | `set_flag:플래그:값` | 플래그 설정 | `set_flag:shop_open:true` |
 | `trigger_event` | `trigger_event:이벤트` | 이벤트 발생 | `trigger_event:level_up` |
+| `teleport` | `teleport:x:y[:target]` | 좌표 텔레포트 | `teleport:512:256:both` |
+| `teleport_tag` | `teleport_tag:tag[:target]` | 태그 텔레포트 | `teleport_tag:temple:p2` |
 
 ### 아이템 시스템
 

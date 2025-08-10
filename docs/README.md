@@ -31,6 +31,13 @@ NPC와의 상호작용을 위한 YAML 기반 대화 관리 시스템
 - 커스텀 이벤트 트리거
 - 확장 가능한 액션 타입
 
+### 🎮 [이동/컨트롤 시스템 (Movement System)](./movement-system.md)
+1P/2P 동시 조작과 태그 이동(텔레포트) 시스템
+
+- 1P: WASD, 2P: 방향키
+- 대화 중 이동 정지 및 입력키 리셋
+- 좌표/태그 기반 텔레포트 지원
+
 ## 🎮 시스템 간 연동
 
 ### 대화 → 액션 → 스탯
@@ -70,10 +77,10 @@ Potato Gang 시스템 구조:
 │   ├── 플래그 액션        # set_flag
 │   └── 이벤트 액션        # trigger_event
 │
-└── 💾 저장 시스템
-    ├── GameData           # 전체 데이터 구조
-    ├── localStorage       # 브라우저 저장
-    └── 버전 관리          # 호환성 보장
+└── 💾 이동/컨트롤 시스템
+    ├── Player, GinsengPlayer  # 1P/2P
+    ├── GameScene              # 입력/업데이트 루프
+    └── ActionProcessor        # teleport / teleport_tag 액션
 ```
 
 ## 🚀 빠른 시작
