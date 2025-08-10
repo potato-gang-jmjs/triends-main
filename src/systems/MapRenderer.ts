@@ -17,7 +17,11 @@ export class MapRenderer {
     this.scene = scene;
   }
 
-  public render(map: MapData, layerDepths?: Record<string, number>): void {
+  public render(
+    map: MapData,
+    layerDepths?: Record<string, number>,
+    tilesTextureKey: string = 'tiles'
+  ): void {
     this.clear();
     this.tileSize = map.tileSize;
     // this.layers = map.layers;
@@ -35,7 +39,7 @@ export class MapRenderer {
         const img = this.scene.add.image(
           t.x * this.tileSize + this.tileSize / 2,
           t.y * this.tileSize + this.tileSize / 2,
-          'tiles',
+          tilesTextureKey,
           frameIndex
         );
         img.setOrigin(0.5);

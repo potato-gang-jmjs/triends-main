@@ -67,8 +67,35 @@ export class MapManager {
       // optional file; ignore errors
     }
 
+    // ───── 타일 스프라이트시트 로드 (맵 전용 → 없으면 글로벌 폴백) ─────
+    const perMapTilesKey = `tiles:${rawKey}`;
+    const perMapTilesPath = `assets/maps/${rawKey}/spritesheet.png`;
+
+    // 이미 로드되어 있는지 확인
+    const existing = this.scene.textures.exists(perMapTilesKey);
+    if (!existing) {
+      // 존재 여부를 먼저 확인 후 로드 시도
+      try {
+        const head = await fetch(perMapTilesPath, { method: 'HEAD' });
+        if (head.ok) {
+          await new Promise<void>((resolve) => {
+            this.scene.load.spritesheet(perMapTilesKey, perMapTilesPath, {
+              frameWidth: data!.tileSize,
+              frameHeight: data!.tileSize
+            });
+            this.scene.load.once(Phaser.Loader.Events.COMPLETE, () => resolve());
+            this.scene.load.start();
+          });
+        }
+      } catch (e) {
+        // ignore; 폴백 사용
+      }
+    }
+
+    const tilesTextureKey = this.scene.textures.exists(perMapTilesKey) ? perMapTilesKey : 'tiles';
+
     // 렌더링
-    this.renderer.render(data, layerDepths);
+    this.renderer.render(data, layerDepths, tilesTextureKey);
 
     // 충돌
     if (tilesMeta) this.collision.setTilesMeta(tilesMeta);

@@ -40,6 +40,9 @@ Spritefusion JSON 기반 타일맵 로딩/렌더링/충돌 시스템
 - collider=true 타일 충돌(Arcade Static Bodies)
 - 계단(Stairs) 통로 처리(collider:false)
 - X 키 충돌체 디버그 토글 / Z 키 좌표 표시
+- 맵별 스프라이트시트 지원: `public/assets/maps/<mapId>/spritesheet.png`(선택)
+  - 있으면 우선 사용, 없으면 전역 `public/assets/spritesheet/spritesheet.png` 사용
+  - 프레임 크기는 `map.json.tileSize`와 동일해야 함
 
 
 - 1P: WASD, 2P: 방향키

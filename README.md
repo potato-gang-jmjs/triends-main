@@ -148,6 +148,7 @@ Phaser의 씬 기반 상태 관리를 활용:
 - **레이어 깊이**: `layers.json`로 레이어별 depth 제어
 - **계단**: `Stairs` 레이어는 collider=false로 통로 처리
 - **디버그 키**: Z(좌표 표시), X(충돌체 표시 토글)
+ - **맵별 스프라이트시트**: `public/assets/maps/<mapId>/spritesheet.png`가 있으면 해당 맵에서 우선 사용. 없으면 전역 `public/assets/spritesheet/spritesheet.png`로 폴백. 프레임 크기는 `map.json.tileSize`와 일치해야 함.
 
 ### 게임 설정 구조
 ```typescript
