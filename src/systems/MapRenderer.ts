@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MapData, MapLayer } from '../types/MapTypes';
+import { MapData } from '../types/MapTypes';
 
 export interface RenderedLayer {
   container: Phaser.GameObjects.Container;
@@ -9,8 +9,8 @@ export interface RenderedLayer {
 export class MapRenderer {
   private scene: Phaser.Scene;
   private tileSize: number = 64;
-  // keep for future features (culling), unused now
-  private layers: MapLayer[] = [];
+  // reserved for future culling
+  // private layers: MapLayer[] = [];
   private rendered: RenderedLayer[] = [];
 
   constructor(scene: Phaser.Scene) {
@@ -20,7 +20,7 @@ export class MapRenderer {
   public render(map: MapData, layerDepths?: Record<string, number>): void {
     this.clear();
     this.tileSize = map.tileSize;
-    this.layers = map.layers;
+    // this.layers = map.layers;
 
     map.layers.forEach((layer, index) => {
       const container = this.scene.add.container(0, 0);

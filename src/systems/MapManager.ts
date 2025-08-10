@@ -9,8 +9,8 @@ export class MapManager {
   private scene: Phaser.Scene;
   private renderer: MapRenderer;
   private collision: MapCollisionManager;
-  // reserved for future use (map switching)
-  private currentMapKey: string | null = null;
+  // 현재 로드된 맵 키(필요 시 노출/사용). 미사용 시 최적화에서 제외하려면 주석 처리 가능
+  // private currentMapKey: string | null = null;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -25,7 +25,7 @@ export class MapManager {
   public async load(mapKey: string, tilesMeta?: TilesMeta): Promise<boolean> {
     const data = MapLoader.getMap(this.scene, mapKey);
     if (!data) return false;
-    this.currentMapKey = mapKey;
+    // this.currentMapKey = mapKey;
 
     // 카메라/월드 경계
     const worldWidth = data.tileSize * data.mapWidth;
@@ -69,7 +69,7 @@ export class MapManager {
   public unload(): void {
     this.renderer.clear();
     this.collision.clear();
-    this.currentMapKey = null;
+    // this.currentMapKey = null;
   }
 
   public toggleCollisionDebug(): void {
