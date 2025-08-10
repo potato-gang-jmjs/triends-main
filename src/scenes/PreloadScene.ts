@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SCENES } from '../utils/constants';
+import { SCENES, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -8,10 +8,26 @@ export class PreloadScene extends Phaser.Scene {
 
   preload(): void {
     // 로딩 화면 표시
-    this.add.text(512, 384, 'Loading...', {
-      fontSize: '32px',
+    const loadingText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'Loading...', {
+      fontSize: '28px',
       color: '#ffffff'
     }).setOrigin(0.5);
+
+    const barWidth = 600;
+    const barHeight = 24;
+    const barX = (GAME_WIDTH - barWidth) / 2;
+    const barY = GAME_HEIGHT / 2;
+    this.add.rectangle(barX + barWidth / 2, barY, barWidth, barHeight, 0x333333).setOrigin(0.5);
+    const progressBar = this.add.rectangle(barX, barY, 0, barHeight, 0x88cc88).setOrigin(0, 0.5);
+    const percentText = this.add.text(GAME_WIDTH / 2, barY + 40, '0%', { fontSize: '20px', color: '#cccccc' }).setOrigin(0.5);
+
+    this.load.on('progress', (value: number) => {
+      progressBar.width = barWidth * value;
+      percentText.setText(`${Math.round(value * 100)}%`);
+    });
+    this.load.on('complete', () => {
+      loadingText.setText('Complete');
+    });
 
     // 임시 텍스처 생성 (실제 에셋 대신 사용)
     this.add.graphics()
@@ -58,7 +74,8 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    // 게임 씬으로 이동
-    this.scene.start(SCENES.GAME);
+    // 메인 메뉴로 이동 (로딩 완료 후 약간의 페이드)
+    this.cameras.main.fadeIn(200, 0, 0, 0);
+    this.time.delayedCall(200, () => this.scene.start(SCENES.MAIN_MENU));
   }
 } 
