@@ -98,6 +98,7 @@ export class MapManager {
     this.renderer.render(data, layerDepths, tilesTextureKey);
 
     // 충돌
+    this.collision.setTilesTextureKey(tilesTextureKey);
     if (tilesMeta) this.collision.setTilesMeta(tilesMeta);
     this.collision.build(data);
 
