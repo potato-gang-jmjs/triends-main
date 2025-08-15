@@ -117,7 +117,7 @@ export class GameScene extends Phaser.Scene {
     
     // 플레이어 생성
     // Player1 생성
-    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 256);
 
     // Player2 생성
     this.player2 = new GinsengPlayer(this, GAME_WIDTH / 2 + 128, GAME_HEIGHT / 2);
