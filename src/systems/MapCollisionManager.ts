@@ -12,6 +12,8 @@ export class MapCollisionManager {
   private tilesMeta: TilesMeta = {};
   private debugVisible = false;
   private pendingPlayers: Phaser.Physics.Arcade.Sprite[] = [];
+  private tilesTextureKey: string = 'tiles';
+  private frameOpaqueBoundsCache: Map<string, { left: number; top: number; right: number; bottom: number } | null> = new Map();
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -23,6 +25,10 @@ export class MapCollisionManager {
 
   public setTilesMeta(meta: TilesMeta): void {
     this.tilesMeta = meta || {};
+  }
+
+  public setTilesTextureKey(key: string): void {
+    this.tilesTextureKey = key || 'tiles';
   }
 
   public build(map: MapData): void {
@@ -44,6 +50,56 @@ export class MapCollisionManager {
     return !rule.requires.every(flag => !!gvm.get(flag));
   }
 
+  private getOpaqueBoundsForFrame(frameIndex: number): { left: number; top: number; right: number; bottom: number } | null {
+    const cacheKey = `${this.tilesTextureKey}:${frameIndex}:${this.tileSize}`;
+    if (this.frameOpaqueBoundsCache.has(cacheKey)) {
+      return this.frameOpaqueBoundsCache.get(cacheKey)!;
+    }
+
+    const texture = this.scene.textures.get(this.tilesTextureKey);
+    if (!texture) {
+      this.frameOpaqueBoundsCache.set(cacheKey, null);
+      return null;
+    }
+    const frame = texture.get(frameIndex);
+    if (!frame) {
+      this.frameOpaqueBoundsCache.set(cacheKey, null);
+      return null;
+    }
+
+    const startX = Math.floor(frame.cutX);
+    const startY = Math.floor(frame.cutY);
+    const width = Math.floor(frame.cutWidth);
+    const height = Math.floor(frame.cutHeight);
+
+    let left = width;
+    let top = height;
+    let right = -1;
+    let bottom = -1;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const alpha = this.scene.textures.getPixelAlpha(startX + x, startY + y, texture.key) as number;
+        if (alpha && alpha > 0) {
+          if (x < left) left = x;
+          if (y < top) top = y;
+          if (x > right) right = x;
+          if (y > bottom) bottom = y;
+        }
+      }
+    }
+
+    if (right === -1 || bottom === -1) {
+      // fully transparent frame
+      this.frameOpaqueBoundsCache.set(cacheKey, null);
+      return null;
+    }
+
+    const bounds = { left, top, right, bottom };
+    this.frameOpaqueBoundsCache.set(cacheKey, bounds);
+    return bounds;
+  }
+
   private buildArcade(map: MapData): void {
     this.staticColliders = this.scene.physics.add.staticGroup();
 
@@ -54,14 +110,28 @@ export class MapCollisionManager {
           // requires 조건이 충족되면 충돌을 만들지 않음(통과 가능)
           continue;
         }
-        const x = t.x * this.tileSize + this.tileSize / 2;
-        const y = t.y * this.tileSize + this.tileSize / 2;
-        const img = this.staticColliders.create(x, y, 'red') as Phaser.Physics.Arcade.Image;
+
+        const frameIndex = Number(t.id);
+        const bounds = this.getOpaqueBoundsForFrame(frameIndex);
+        if (!bounds) {
+          // 투명 프레임은 충돌로 만들지 않음
+          continue;
+        }
+
+        const colliderWidth = bounds.right - bounds.left + 1;
+        const colliderHeight = bounds.bottom - bounds.top + 1;
+
+        const worldLeft = t.x * this.tileSize + bounds.left;
+        const worldTop = t.y * this.tileSize + bounds.top;
+        const cx = worldLeft + colliderWidth / 2;
+        const cy = worldTop + colliderHeight / 2;
+
+        const img = this.staticColliders.create(cx, cy, 'red') as Phaser.Physics.Arcade.Image;
         img.setVisible(this.debugVisible);
         img.setAlpha(this.debugVisible ? 0.3 : 1);
-        img.setDisplaySize(this.tileSize, this.tileSize);
+        img.setDisplaySize(colliderWidth, colliderHeight);
         const body = img.body as Phaser.Physics.Arcade.StaticBody;
-        body.setSize(this.tileSize, this.tileSize);
+        body.setSize(colliderWidth, colliderHeight);
         body.updateFromGameObject();
       }
     }
@@ -90,7 +160,7 @@ export class MapCollisionManager {
       const img = obj as Phaser.Physics.Arcade.Image;
       img.setVisible(this.debugVisible);
       img.setAlpha(this.debugVisible ? 0.3 : 1);
-      img.setDisplaySize(this.tileSize, this.tileSize);
+      // displaySize is already set to collider bounds on creation
       return false;
     });
   }

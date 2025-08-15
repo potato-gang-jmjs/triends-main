@@ -255,6 +255,36 @@ export class Player {
     }
   }
 
+  public setStat(statName: keyof PlayerStats, value: number): void {
+    if (typeof this.stats[statName] === 'number') {
+      (this.stats as any)[statName] = value;
+
+      // 항목별 클램핑/연쇄 보정
+      if (statName === 'health') {
+        this.stats.health = Math.max(0, Math.min(this.stats.health, this.stats.maxHealth));
+      }
+      if (statName === 'maxHealth') {
+        // 최대 체력 변경 시 현재 체력 클램핑
+        this.stats.health = Math.max(0, Math.min(this.stats.health, this.stats.maxHealth));
+      }
+      if (statName === 'hearts_p1') {
+        this.stats.hearts_p1 = Math.max(0, Math.min(this.stats.hearts_p1, this.stats.maxHearts_p1 ?? this.stats.hearts_p1));
+      }
+      if (statName === 'hearts_p2') {
+        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
+      }
+      if (statName === 'maxHearts_p1' && this.stats.maxHearts_p1 < this.stats.hearts_p1) {
+        this.stats.hearts_p1 = this.stats.maxHearts_p1;
+      }
+      if (statName === 'maxHearts_p2' && this.stats.maxHearts_p2 < this.stats.hearts_p2) {
+        this.stats.hearts_p2 = this.stats.maxHearts_p2;
+      }
+
+      SaveManager.updatePlayerStats({ [statName]: this.stats[statName] } as Partial<PlayerStats>);
+      console.log(`${statName} 설정:`, this.stats[statName]);
+    }
+  }
+
   public getStats(): PlayerStats {
     return { ...this.stats };
   }
