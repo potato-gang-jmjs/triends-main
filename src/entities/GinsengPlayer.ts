@@ -4,67 +4,64 @@ import { PLAYER_SPEED, PLAYER_DIAGONAL_SPEED } from '../utils/constants';
 import { PlayerStats } from '../types/GameData';
 import { SaveManager } from '../systems/SaveManager';
 
+// ginseng 시트: row0 down(0–3), row1 left(4–7), row2 right(8–11), row3 up(12–15)
+type Dir = 'down' | 'left' | 'right' | 'up';
+const GINSENG_TEX = 'ginseng';
+const GINSENG_IDLE: Record<Dir, number> = { down: 0, left: 4, right: 8, up: 12 };
+
+function registerGinsengAnimations(scene: Phaser.Scene) {
+  const a = scene.anims;
+  const ensure = (key: string, start: number, end: number) => {
+    if (!a.exists(key)) {
+      a.create({
+        key,
+        frames: a.generateFrameNumbers(GINSENG_TEX, { start, end }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
+  };
+  ensure('ginseng-walk-down', 0, 3);
+  ensure('ginseng-walk-left', 4, 7);
+  ensure('ginseng-walk-right', 8, 11);
+  ensure('ginseng-walk-up', 12, 15);
+}
+
 export class GinsengPlayer {
   public sprite: Phaser.Physics.Arcade.Sprite;
   public stats: PlayerStats;
 
-  // 내부 전용 상태(방향/애니메이션)
-  private lastDir: 'left' | 'right' | 'up' | 'down' = 'down';
+  // 내부 전용 상태
+  private lastDir: Dir = 'down';
+  private wasMoving = false;
+  private dirDownAt: Record<'left' | 'right' | 'up' | 'down', number> = {
+    left: 0, right: 0, up: 0, down: 0
+  };
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  // (선택) Player와 호환되는 최소 걷기 유지시간 변수를 쓰고 있다면 그대로 활용됨
+  // private minWalkDuration = 100;
+  // private walkStartAt = 0;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, spriteKey: string = GINSENG_TEX) {
     // 저장된 데이터에서 스탯 로드 (Player와 동일한 방식)
     const savedData = SaveManager.loadGame();
     this.stats = { ...savedData.player.stats };
 
-    // 스프라이트 생성 (ginseng 시트 사용)
-    this.sprite = scene.physics.add.sprite(x, y, 'ginseng', 0);
+    this.sprite = scene.physics.add.sprite(x, y, spriteKey, 0);
     this.sprite.setCollideWorldBounds(true);
     this.sprite.setDepth(1000);
-
-    // 비주얼/히트박스 (이전 확장 버전과 동일)
-    this.sprite.setScale(1);
     this.sprite.setOrigin(0.5, 1);
 
+    // 히트박스: 64x64 시트 기준 논리 32x48 박스
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-    body.setSize(20, 16);
-    body.setOffset(14, 32); // 필요 시 28~32 사이 미세조정
+    body.setSize(32, 48);
+    body.setOffset(16, 16);
 
-    // 애니메이션(없으면 생성) — 행: down(0–3), left(4–7), right(8–11), up(12–15)
-    const a = scene.anims;
-    if (!a.exists('ginseng-walk-down')) {
-      a.create({
-        key: 'ginseng-walk-down',
-        frames: a.generateFrameNumbers('ginseng', { start: 0, end: 3 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
-    if (!a.exists('ginseng-walk-left')) {
-      a.create({
-        key: 'ginseng-walk-left',
-        frames: a.generateFrameNumbers('ginseng', { start: 4, end: 7 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
-    if (!a.exists('ginseng-walk-right')) {
-      a.create({
-        key: 'ginseng-walk-right',
-        frames: a.generateFrameNumbers('ginseng', { start: 8, end: 11 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
-    if (!a.exists('ginseng-walk-up')) {
-      a.create({
-        key: 'ginseng-walk-up',
-        frames: a.generateFrameNumbers('ginseng', { start: 12, end: 15 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
+    // 애니메이션 등록 및 기본 idle 세팅
+    registerGinsengAnimations(scene);
+    this.sprite.setFrame(GINSENG_IDLE.down);
 
-    // 저장된 위치 복원 (Player와 동일 로직)
+    // 저장된 위치 복원
     if (savedData.player.position.x !== 512 || savedData.player.position.y !== 512) {
       this.sprite.setPosition(savedData.player.position.x, savedData.player.position.y);
     }
@@ -74,16 +71,38 @@ export class GinsengPlayer {
   public update(cursors: Phaser.Types.Input.Keyboard.CursorKeys): void {
     if (!cursors) return;
 
-    const left = cursors.left?.isDown;
-    const right = cursors.right?.isDown;
-    const up = cursors.up?.isDown;
-    const down = cursors.down?.isDown;
+    // --- 최근 입력(Last-pressed) 트래킹: 화살표 + (있다면) WASD도 함께 처리
+    const kLeft  = [cursors.left,  (cursors as any)?.A].filter(Boolean) as Phaser.Input.Keyboard.Key[];
+    const kRight = [cursors.right, (cursors as any)?.D].filter(Boolean) as Phaser.Input.Keyboard.Key[];
+    const kUp    = [cursors.up,    (cursors as any)?.W].filter(Boolean) as Phaser.Input.Keyboard.Key[];
+    const kDown  = [cursors.down,  (cursors as any)?.S].filter(Boolean) as Phaser.Input.Keyboard.Key[];
 
-    let vx = 0, vy = 0;
-    if (left) vx = -1; else if (right) vx = 1;
-    if (up) vy = -1;   else if (down)  vy = 1;
+    const anyJustDown = (arr: Phaser.Input.Keyboard.Key[]) => arr.some(k => Phaser.Input.Keyboard.JustDown(k));
+    const anyDown     = (arr: Phaser.Input.Keyboard.Key[]) => arr.some(k => k.isDown);
 
-    // 대각선 이동 보정
+    const now = this.sprite.scene.time.now;
+    if (anyJustDown(kLeft))  this.dirDownAt.left  = now;
+    if (anyJustDown(kRight)) this.dirDownAt.right = now;
+    if (anyJustDown(kUp))    this.dirDownAt.up    = now;
+    if (anyJustDown(kDown))  this.dirDownAt.down  = now;
+
+    const pressedLeft  = anyDown(kLeft);
+    const pressedRight = anyDown(kRight);
+    const pressedUp    = anyDown(kUp);
+    const pressedDown  = anyDown(kDown);
+
+    const chooseAxis = (negDown: boolean, posDown: boolean, negAt: number, posAt: number) => {
+      if (negDown && posDown) return negAt > posAt ? -1 : 1; // 최근에 눌린 쪽 우선
+      if (negDown) return -1;
+      if (posDown) return 1;
+      return 0;
+    };
+
+    // 이동 벡터(최근 입력 우선)
+    let vx = chooseAxis(pressedLeft, pressedRight, this.dirDownAt.left, this.dirDownAt.right);
+    let vy = chooseAxis(pressedUp,   pressedDown, this.dirDownAt.up,   this.dirDownAt.down);
+
+    // 대각선 보정
     if (vx !== 0 && vy !== 0) {
       vx *= PLAYER_DIAGONAL_SPEED / PLAYER_SPEED;
       vy *= PLAYER_DIAGONAL_SPEED / PLAYER_SPEED;
@@ -92,17 +111,58 @@ export class GinsengPlayer {
     // 속도 적용
     this.sprite.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED);
 
+    const isMoving = (vx !== 0 || vy !== 0);
+
     // 애니메이션/아이들 프레임
-    if (vx === 0 && vy === 0) {
-      const first = { down: 0, left: 4, right: 8, up: 12 }[this.lastDir];
-      this.sprite.anims.stop();
-      this.sprite.setFrame(first);
+    if (!isMoving) {
+      // (선택) 최소 걷기 유지시간 정책을 쓰고 있다면 그 이후에만 idle 전환
+      if (!(this as any).minWalkDuration || this.sprite.scene.time.now - (this as any).walkStartAt >= (this as any).minWalkDuration) {
+        const first = GINSENG_IDLE[this.lastDir];
+        this.sprite.anims.stop();
+        this.sprite.setFrame(first);
+      }
     } else {
-      this.lastDir =
-        Math.abs(vx) > Math.abs(vy) ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up');
-      this.sprite.anims.play('ginseng-walk-' + this.lastDir, true);
+      // 최근에 눌린 키가 바라보는 방향이 되도록
+      type D = 'left' | 'right' | 'up' | 'down';
+      const candidates: D[] = [];
+      if (pressedLeft)  candidates.push('left');
+      if (pressedRight) candidates.push('right');
+      if (pressedUp)    candidates.push('up');
+      if (pressedDown)  candidates.push('down');
+
+      if (candidates.length > 0) {
+        let best: D = candidates[0] as D;
+        for (const d of candidates as D[]) {
+          if (this.dirDownAt[d] >= this.dirDownAt[best]) best = d;
+        }
+        // 수평/수직에 맞춰 lastDir 지정
+        if (best === 'left' || best === 'right') {
+          this.lastDir = best;
+        } else {
+          this.lastDir = best;
+        }
+      }
+
+      const key = 'ginseng-walk-' + this.lastDir;
+
+      // ★ play를 먼저 호출한 후, 전환 프레임에서 2번째 프레임으로 스냅
+      this.sprite.anims.play(key, true);
+      if (!this.wasMoving) {
+        const anim = this.sprite.scene.anims.get(key);
+        if (anim && anim.frames[1]) {
+          // 같은 틱에서 0프레임으로 리셋되는 것을 덮어씀
+          this.sprite.anims.setCurrentFrame(anim.frames[1]);
+        }
+      }
+
+      if ((this as any).walkStartAt !== undefined) {
+        (this as any).walkStartAt = this.sprite.scene.time.now;
+      }
       this.sprite.setRotation(0);
     }
+
+    // 프레임 말미에 전환 상태 갱신
+    this.wasMoving = isMoving;
 
     // 1초마다 위치 저장 (Player와 동일)
     const getFrame = (this.sprite.scene.game as any).getFrame?.bind(this.sprite.scene.game);
@@ -111,75 +171,52 @@ export class GinsengPlayer {
     }
   }
 
+  public savePosition(): void {
+    // 현재 저장 데이터 로드
+    const current = SaveManager.loadGame();
+
+    // player 객체를 보존하면서 position만 갱신
+    const updatedPlayer = {
+      ...current.player,
+      position: { x: this.sprite.x, y: this.sprite.y }
+    };
+
+    // 최상위 얕은 병합 → 전체 player 객체로 저장
+    SaveManager.saveGame({ player: updatedPlayer });
+  }
+
   // ───────── 아래 메서드들은 Player와 동일한 공개 API ─────────
 
   public updateStats(newStats: Partial<PlayerStats>): void {
     Object.assign(this.stats, newStats);
     SaveManager.updatePlayerStats(newStats);
-    console.log('플레이어 스탯 업데이트:', newStats);
   }
 
   public addStat(statName: keyof PlayerStats, amount: number): void {
     if (typeof this.stats[statName] === 'number') {
-      // @ts-ignore - 인덱스 접근 허용
-      this.stats[statName] += amount;
-      if (statName === 'health' && this.stats.health > this.stats.maxHealth) {
-        this.stats.health = this.stats.maxHealth;
-      }
-      // 하트 클램핑 (2P)
-      if (statName === 'hearts_p2') {
-        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
-      }
-      if (statName === 'hearts_p1') {
-        this.stats.hearts_p1 = Math.max(0, Math.min(this.stats.hearts_p1, this.stats.maxHearts_p1 ?? this.stats.hearts_p1));
-      }
-      SaveManager.updatePlayerStats({ [statName]: this.stats[statName] } as Partial<PlayerStats>);
-      console.log(`${statName} ${amount > 0 ? '+' : ''}${amount}:`, this.stats[statName]);
-    }
-  }
+      // 단순 더하기
+      (this.stats as any)[statName] = (this.stats as any)[statName] + amount;
 
-  public setStat(statName: keyof PlayerStats, value: number): void {
-    if (typeof this.stats[statName] === 'number') {
-      // @ts-ignore - 인덱스 접근 허용
-      this.stats[statName] = value;
-      if (statName === 'health' && this.stats.health > this.stats.maxHealth) {
-        this.stats.health = this.stats.maxHealth;
-      }
-      // 하트 관련 클램프
-      if (statName === 'hearts_p2') {
-        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
+      // 항목별 클램핑(프로젝트 규칙과 동일)
+      if (statName === 'health') {
+        this.stats.health = Math.max(0, Math.min(this.stats.health, this.stats.maxHealth));
       }
       if (statName === 'hearts_p1') {
         this.stats.hearts_p1 = Math.max(0, Math.min(this.stats.hearts_p1, this.stats.maxHearts_p1 ?? this.stats.hearts_p1));
       }
-      if (statName === 'maxHearts_p2' && this.stats.maxHearts_p2 < this.stats.hearts_p2) {
-        this.stats.hearts_p2 = this.stats.maxHearts_p2;
+      if (statName === 'hearts_p2') {
+        this.stats.hearts_p2 = Math.max(0, Math.min(this.stats.hearts_p2, this.stats.maxHearts_p2 ?? this.stats.hearts_p2));
       }
       if (statName === 'maxHearts_p1' && this.stats.maxHearts_p1 < this.stats.hearts_p1) {
         this.stats.hearts_p1 = this.stats.maxHearts_p1;
       }
+      if (statName === 'maxHearts_p2' && this.stats.maxHearts_p2 < this.stats.hearts_p2) {
+        this.stats.hearts_p2 = this.stats.maxHearts_p2;
+      }
+
       SaveManager.updatePlayerStats({ [statName]: this.stats[statName] } as Partial<PlayerStats>);
-      console.log(`${statName} 설정:`, this.stats[statName]);
+      console.log(`${statName} ${amount > 0 ? '+' : ''}${amount}:`, this.stats[statName]);
     }
-  }
-
-  // ───────── 하트 전용 헬퍼 (2P) ─────────
-  public addHeartsP2(amount: number): void {
-    this.addStat('hearts_p2' as keyof PlayerStats, amount);
-  }
-
-  public setHeartsP2(value: number): void {
-    this.setStat('hearts_p2' as keyof PlayerStats, value);
-  }
-
-  public setMaxHeartsP2(value: number): void {
-    this.setStat('maxHearts_p2' as keyof PlayerStats, value);
-  }
-
-  public savePosition(): void {
-    const gameData = SaveManager.loadGame();
-    gameData.player.position = { x: this.sprite.x, y: this.sprite.y };
-    SaveManager.saveGame(gameData);
   }
 
   public getStats(): PlayerStats {
