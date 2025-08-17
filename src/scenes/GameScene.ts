@@ -10,6 +10,7 @@ import { DialogueBox } from '../ui/DialogueBox';
 import { SaveManager } from '../systems/SaveManager';
 import { GlobalVariableManager } from '../systems/GlobalVariableManager';
 import { MapManager } from '../systems/MapManager';
+import { VineExtensionSystem } from '../systems/VineExtensionSystem';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -25,6 +26,7 @@ export class GameScene extends Phaser.Scene {
   private mapManager!: MapManager;
   private isTransitioning = false;
   private portalHintContainer!: Phaser.GameObjects.Container;
+  private vineSystem!: VineExtensionSystem;
   
   // 하트 UI
   private heartsTextP1!: Phaser.GameObjects.Text;
@@ -135,6 +137,9 @@ export class GameScene extends Phaser.Scene {
     
     // 전역 변수 매니저 초기화
     GlobalVariableManager.getInstance().initializeDefaults();
+    
+    // 인삼이 특수능력 시스템 (P1 스프라이트 참조 전달)
+    this.vineSystem = new VineExtensionSystem(this, this.player2.sprite, this.player.sprite);
     
     // 대화 시스템 이벤트 연결
     this.setupDialogueEvents();
@@ -597,8 +602,17 @@ export class GameScene extends Phaser.Scene {
     // 대화 중이 아닐 때만 플레이어 이동
     if (!this.dialogueManager.getState().isActive) {
       // player1 은 화살표, player2 는 WASD
-      this.player.update(this.cursors);
-      this.player2.update(this.keysWASD);
+      if ((this.vineSystem as any)?.isP1MovementLocked?.()) {
+        this.player.haltMovementAndIdle();
+      } else {
+        this.player.update(this.cursors);
+      }
+      // P 홀드 시 P2 이동 잠금
+      if (this.vineSystem?.shouldLockOwnerMovement()) {
+        this.player2.haltMovementAndIdle();
+      } else {
+        this.player2.update(this.keysWASD);
+      }
     }
 
     // NPC 매니저 업데이트
@@ -606,6 +620,17 @@ export class GameScene extends Phaser.Scene {
 
     // 포탈 힌트 업데이트
     this.updatePortalHint();
+
+    // 물 근처 여부 업데이트 (P2 기준)
+    const gvm = GlobalVariableManager.getInstance();
+    const near = this.mapManager.isPointAdjacentToWater(this.player2.sprite.x, this.player2.sprite.y);
+    if (gvm.get('isNearWater') !== near) {
+      gvm.set('isNearWater', near);
+    }
+
+    // 덩굴 시스템 업데이트
+    const delta = this.game.loop.delta;
+    this.vineSystem.update(delta);
 
     // 하트 UI 주기적 갱신 (약 4회/초)
     this.uiFrameTicker = (this.uiFrameTicker + 1) % 15;
