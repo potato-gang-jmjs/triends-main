@@ -42,6 +42,10 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48
     });
+    this.load.spritesheet('ginseng_sunflower', 'assets/gimmicks/sunflower.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
     this.load.spritesheet('player', 'assets/characters/astronaut_walking.png', {
       frameWidth: 64,
       frameHeight: 64
@@ -111,6 +115,32 @@ export class GameScene extends Phaser.Scene {
     this.anims.create({
       key: 'ginseng-walk-up',
       frames: this.anims.generateFrameNumbers('ginseng', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    // 인삼이 해바라기 애니메이션 등록
+    this.anims.create({
+      key: 'ginseng-sunflower-down',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-left',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-right',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-up',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 12, end: 15 }),
       frameRate: 8,
       repeat: -1
     });
