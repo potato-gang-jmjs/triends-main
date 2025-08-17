@@ -42,6 +42,10 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48
     });
+    this.load.spritesheet('thunder', 'assets/gimmicks/thunder.png', {
+      frameWidth: 128,
+      frameHeight: 192
+    });
     this.load.spritesheet('ginseng_sunflower', 'assets/gimmicks/sunflower.png', {
       frameWidth: 64,
       frameHeight: 64
@@ -115,6 +119,14 @@ export class GameScene extends Phaser.Scene {
     this.anims.create({
       key: 'ginseng-walk-up',
       frames: this.anims.generateFrameNumbers('ginseng', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    // 인삼이 변신 번개 애니메이션 등록
+    this.anims.create({
+      key: 'thunder',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 0, end: 5 }),
       frameRate: 8,
       repeat: -1
     });
