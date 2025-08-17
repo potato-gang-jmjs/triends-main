@@ -22,6 +22,7 @@ export class GameScene extends Phaser.Scene {
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private zKey!: Phaser.Input.Keyboard.Key;
   private xKey!: Phaser.Input.Keyboard.Key;
+  private rKey!: Phaser.Input.Keyboard.Key;
   private mapManager!: MapManager;
   private isTransitioning = false;
   private portalHintContainer!: Phaser.GameObjects.Container;
@@ -42,9 +43,9 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48
     });
-    this.load.spritesheet('thunder', 'assets/gimmicks/thunder.png', {
-      frameWidth: 128,
-      frameHeight: 192
+    this.load.spritesheet('thunder', 'assets/gimmicks/thunder6.png', {
+      frameWidth: 256,
+      frameHeight: 384
     });
     this.load.spritesheet('ginseng_sunflower', 'assets/gimmicks/sunflower.png', {
       frameWidth: 64,
@@ -123,13 +124,15 @@ export class GameScene extends Phaser.Scene {
       repeat: -1
     });
 
-    // 인삼이 변신 번개 애니메이션 등록
-    this.anims.create({
-      key: 'thunder',
-      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 0, end: 5 }),
-      frameRate: 8,
-      repeat: -1
-    });
+    // 변신 번개 애니메이션 등록 (thunder 시트 사용)
+    if (!this.anims.exists('thunder-strike')) {
+      this.anims.create({
+        key: 'thunder-strike',
+        frames: this.anims.generateFrameNumbers('thunder', { start: 0, end: 5 }),
+        frameRate: 16,
+        repeat: 0
+      });
+    }
 
     // 인삼이 해바라기 애니메이션 등록
     this.anims.create({
@@ -302,6 +305,8 @@ export class GameScene extends Phaser.Scene {
     this.zKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
     // X (충돌체 디버그 토글)
     this.xKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+    // R (인삼 ↔ 해바라기 변신)
+    this.rKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     
     // 스페이스 키 이벤트
     this.spaceKey.on('down', () => {
@@ -321,6 +326,11 @@ export class GameScene extends Phaser.Scene {
     // X: 충돌체 디버그 표시 토글
     this.xKey.on('down', () => {
       this.mapManager?.toggleCollisionDebug();
+    });
+
+    // R: 번개 + 변신 토글
+    this.rKey.on('down', () => {
+      this.onTransformToggle();
     });
     
     // ESC 키로 메인 메뉴로 돌아가기
@@ -393,6 +403,24 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-F9', () => {
       GlobalVariableManager.getInstance().set('story_progress', 'chapter2');
       console.log('스토리 진행도 설정: chapter2');
+    });
+  }
+
+  private onTransformToggle(): void {
+    if (this.isTransitioning || this.dialogueManager.getState().isActive) return;
+    const p2 = this.player2?.sprite;
+    if (!p2) return;
+    this.triggerThunderAt(p2.x, p2.y);
+    this.player2.toggleForm();
+  }
+
+  private triggerThunderAt(x: number, y: number): void {
+    const s = this.add.sprite(x, y, 'thunder', 0);
+    s.setOrigin(0.5, 1);
+    s.setDepth(1500);
+    s.play('thunder-strike');
+    s.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      s.destroy();
     });
   }
 

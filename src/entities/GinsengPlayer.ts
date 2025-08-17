@@ -9,6 +9,10 @@ type Dir = 'down' | 'left' | 'right' | 'up';
 const GINSENG_TEX = 'ginseng';
 const GINSENG_IDLE: Record<Dir, number> = { down: 0, left: 4, right: 8, up: 12 };
 
+// sunflower 시트: row0 down(0–3), row1 left(4–7), row2 right(8–11), row3 up(12–15)
+const SUNFLOWER_TEX = 'ginseng_sunflower';
+const SUNFLOWER_IDLE: Record<Dir, number> = { down: 0, left: 4, right: 8, up: 12 };
+
 function registerGinsengAnimations(scene: Phaser.Scene) {
   const a = scene.anims;
   const ensure = (key: string, start: number, end: number) => {
@@ -37,6 +41,7 @@ export class GinsengPlayer {
   private dirDownAt: Record<'left' | 'right' | 'up' | 'down', number> = {
     left: 0, right: 0, up: 0, down: 0
   };
+  private form: 'ginseng' | 'sunflower';
 
   // (선택) Player와 호환되는 최소 걷기 유지시간 변수를 쓰고 있다면 그대로 활용됨
   // private minWalkDuration = 100;
@@ -59,7 +64,8 @@ export class GinsengPlayer {
 
     // 애니메이션 등록 및 기본 idle 세팅
     registerGinsengAnimations(scene);
-    this.sprite.setFrame(GINSENG_IDLE.down);
+    this.form = spriteKey === SUNFLOWER_TEX ? 'sunflower' : 'ginseng';
+    this.sprite.setFrame((this.form === 'ginseng' ? GINSENG_IDLE : SUNFLOWER_IDLE).down);
 
     // 저장된 위치 복원
     if (savedData.player.position.x !== 512 || savedData.player.position.y !== 512) {
@@ -117,7 +123,7 @@ export class GinsengPlayer {
     if (!isMoving) {
       // (선택) 최소 걷기 유지시간 정책을 쓰고 있다면 그 이후에만 idle 전환
       if (!(this as any).minWalkDuration || this.sprite.scene.time.now - (this as any).walkStartAt >= (this as any).minWalkDuration) {
-        const first = GINSENG_IDLE[this.lastDir];
+        const first = (this.form === 'ginseng' ? GINSENG_IDLE : SUNFLOWER_IDLE)[this.lastDir];
         this.sprite.anims.stop();
         this.sprite.setFrame(first);
       }
@@ -143,7 +149,7 @@ export class GinsengPlayer {
         }
       }
 
-      const key = 'ginseng-walk-' + this.lastDir;
+      const key = (this.form === 'ginseng' ? 'ginseng-walk-' : 'ginseng-sunflower-') + this.lastDir;
 
       // ★ play를 먼저 호출한 후, 전환 프레임에서 2번째 프레임으로 스냅
       this.sprite.anims.play(key, true);
@@ -230,5 +236,31 @@ export class GinsengPlayer {
     console.log(`경험치: ${this.stats.experience}`);
     console.log(`레벨: ${this.stats.level}`);
     console.log(`위치: (${Math.round(this.sprite.x)}, ${Math.round(this.sprite.y)})`);
+  }
+
+  public setForm(newForm: 'ginseng' | 'sunflower'): void {
+    if (this.form === newForm) return;
+    this.form = newForm;
+
+    const tex = newForm === 'ginseng' ? GINSENG_TEX : SUNFLOWER_TEX;
+    this.sprite.setTexture(tex);
+
+    // 형태에 맞는 idle 프레임으로 전환
+    const idle = newForm === 'ginseng' ? GINSENG_IDLE : SUNFLOWER_IDLE;
+    this.sprite.anims.stop();
+    this.sprite.setFrame(idle[this.lastDir]);
+
+    // 히트박스는 통일 (필요 시 형태별로 조정 가능)
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.setSize(32, 48);
+    body.setOffset(16, 16);
+  }
+
+  public toggleForm(): void {
+    this.setForm(this.form === 'ginseng' ? 'sunflower' : 'ginseng');
+  }
+
+  public isSunflowerForm(): boolean {
+    return this.form === 'sunflower';
   }
 }
