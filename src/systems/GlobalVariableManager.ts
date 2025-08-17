@@ -109,6 +109,9 @@ export class GlobalVariableManager {
     if (!this.has('isVineSkillActivated')) this.set('isVineSkillActivated', true);
     if (!this.has('p1VineLocked')) this.set('p1VineLocked', false);
 
+    // 해바라기 변신 상태 기본값
+    if (!this.has('isSunflower')) this.set('isSunflower', false);
+
     console.log('기본 전역 변수 초기화 완료');
   }
 } 

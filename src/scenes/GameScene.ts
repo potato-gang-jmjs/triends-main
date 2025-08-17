@@ -608,7 +608,10 @@ export class GameScene extends Phaser.Scene {
         this.player.update(this.cursors);
       }
       // P 홀드 시 P2 이동 잠금
-      if (this.vineSystem?.shouldLockOwnerMovement()) {
+      if (GlobalVariableManager.getInstance().get('isSunflower')) {
+        // 해바라기 변신 중: P2는 고정, 화살표로 조준 애니메이션
+        this.player2.updateSunflower(this.cursors);
+      } else if (this.vineSystem?.shouldLockOwnerMovement()) {
         this.player2.haltMovementAndIdle();
       } else {
         this.player2.update(this.keysWASD);

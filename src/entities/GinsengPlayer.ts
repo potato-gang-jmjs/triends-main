@@ -171,6 +171,83 @@ export class GinsengPlayer {
     }
   }
 
+  public updateSunflower(cursors: Phaser.Types.Input.Keyboard.CursorKeys): void {
+    if (!cursors) return;
+
+    // 이동 완전 정지
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.stop();
+    this.sprite.setVelocity(0, 0);
+
+    const keys = {
+      left: cursors.left!,
+      right: cursors.right!,
+      up: cursors.up!,
+      down: cursors.down!
+    };
+
+    const anyJustDown = (k?: Phaser.Input.Keyboard.Key) => !!k && Phaser.Input.Keyboard.JustDown(k);
+    const now = this.sprite.scene.time.now;
+    if (anyJustDown(keys.left))  this.dirDownAt.left  = now;
+    if (anyJustDown(keys.right)) this.dirDownAt.right = now;
+    if (anyJustDown(keys.up))    this.dirDownAt.up    = now;
+    if (anyJustDown(keys.down))  this.dirDownAt.down  = now;
+
+    const pressed = {
+      left:  !!keys.left && keys.left.isDown,
+      right: !!keys.right && keys.right.isDown,
+      up:    !!keys.up && keys.up.isDown,
+      down:  !!keys.down && keys.down.isDown
+    };
+
+    // 방향 선택: 현재 눌린 키들 중 가장 최근에 눌린 방향
+    const candidates: Dir[] = [];
+    if (pressed.left)  candidates.push('left');
+    if (pressed.right) candidates.push('right');
+    if (pressed.up)    candidates.push('up');
+    if (pressed.down)  candidates.push('down');
+
+    if (candidates.length === 0) {
+      // 아무 입력 없으면 idle 유지
+      this.sprite.anims.stop();
+      this.sprite.setFrame(GINSENG_IDLE[this.lastDir]);
+      return;
+    }
+
+    let best: Dir = candidates[0] as Dir;
+    for (const d of candidates as Dir[]) {
+      if (this.dirDownAt[d] >= this.dirDownAt[best]) best = d;
+    }
+    this.lastDir = best;
+
+    // 방향성 슈팅/라이트 애니메이션 플레이(존재하는 키 우선)
+    const keyOptions = [
+      `sunflower-shoot-${best}`,
+      `sunflower-light-${best}`,
+      `ginseng-shoot-${best}`,
+      `ginseng-light-${best}`,
+      `shoot-${best}`,
+      `light-${best}`
+    ];
+
+    let played = false;
+    for (const k of keyOptions) {
+      if (this.sprite.scene.anims.exists(k)) {
+        this.sprite.anims.play(k, true);
+        played = true;
+        break;
+      }
+    }
+
+    if (!played) {
+      // 대체: 바라보는 방향의 idle 프레임
+      this.sprite.anims.stop();
+      this.sprite.setFrame(GINSENG_IDLE[this.lastDir]);
+    }
+
+    this.sprite.setRotation(0);
+  }
+
   public haltMovementAndIdle(): void {
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
     body.stop();
