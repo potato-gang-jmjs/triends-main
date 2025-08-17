@@ -9,23 +9,6 @@ type Dir = 'down' | 'left' | 'right' | 'up';
 const GINSENG_TEX = 'ginseng';
 const GINSENG_IDLE: Record<Dir, number> = { down: 0, left: 4, right: 8, up: 12 };
 
-function registerGinsengAnimations(scene: Phaser.Scene) {
-  const a = scene.anims;
-  const ensure = (key: string, start: number, end: number) => {
-    if (!a.exists(key)) {
-      a.create({
-        key,
-        frames: a.generateFrameNumbers(GINSENG_TEX, { start, end }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
-  };
-  ensure('ginseng-walk-down', 0, 3);
-  ensure('ginseng-walk-left', 4, 7);
-  ensure('ginseng-walk-right', 8, 11);
-  ensure('ginseng-walk-up', 12, 15);
-}
 
 export class GinsengPlayer {
   public sprite: Phaser.Physics.Arcade.Sprite;
@@ -37,6 +20,8 @@ export class GinsengPlayer {
   private dirDownAt: Record<'left' | 'right' | 'up' | 'down', number> = {
     left: 0, right: 0, up: 0, down: 0
   };
+  private arrowKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private sunflowerMode = false;
 
   // (선택) Player와 호환되는 최소 걷기 유지시간 변수를 쓰고 있다면 그대로 활용됨
   // private minWalkDuration = 100;
@@ -57,19 +42,104 @@ export class GinsengPlayer {
     body.setSize(32, 48);
     body.setOffset(16, 16);
 
-    // 애니메이션 등록 및 기본 idle 세팅
-    registerGinsengAnimations(scene);
+    // 애니메이션은 GameScene에서 등록된 키를 사용 (중복 등록 회피)
     this.sprite.setFrame(GINSENG_IDLE.down);
 
     // 저장된 위치 복원
     if (savedData.player.position.x !== 512 || savedData.player.position.y !== 512) {
       this.sprite.setPosition(savedData.player.position.x, savedData.player.position.y);
     }
+
+    // 화살표 입력 참조(플레이어1과 공유되지만 읽기 전용)
+    this.arrowKeys = scene.input.keyboard!.createCursorKeys();
   }
 
   // Player와 동일한 시그니처
   public update(cursors: Phaser.Types.Input.Keyboard.CursorKeys): void {
     if (!cursors) return;
+
+    // ───────── Sunflower(해바라기) 변신 상태: 이동 금지 + 방향키로 광선 애니메이션 ─────────
+    if (this.sunflowerMode) {
+      // 항상 정지
+      const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+      body.stop();
+      this.sprite.setVelocity(0, 0);
+
+      const now = this.sprite.scene.time.now;
+      const kL = this.arrowKeys.left!;
+      const kR = this.arrowKeys.right!;
+      const kU = this.arrowKeys.up!;
+      const kD = this.arrowKeys.down!;
+
+      if (Phaser.Input.Keyboard.JustDown(kL)) this.dirDownAt.left = now;
+      if (Phaser.Input.Keyboard.JustDown(kR)) this.dirDownAt.right = now;
+      if (Phaser.Input.Keyboard.JustDown(kU)) this.dirDownAt.up = now;
+      if (Phaser.Input.Keyboard.JustDown(kD)) this.dirDownAt.down = now;
+
+      const pressedLeft = kL.isDown;
+      const pressedRight = kR.isDown;
+      const pressedUp = kU.isDown;
+      const pressedDown = kD.isDown;
+
+      const chooseAxis = (negDown: boolean, posDown: boolean, negAt: number, posAt: number) => {
+        if (negDown && posDown) return negAt > posAt ? -1 : 1; // 최근에 눌린 쪽 우선
+        if (negDown) return -1;
+        if (posDown) return 1;
+        return 0;
+      };
+
+      const ax = chooseAxis(pressedLeft, pressedRight, this.dirDownAt.left, this.dirDownAt.right);
+      const ay = chooseAxis(pressedUp, pressedDown, this.dirDownAt.up, this.dirDownAt.down);
+
+      const anyPressed = pressedLeft || pressedRight || pressedUp || pressedDown;
+
+      if (anyPressed) {
+        // 최근에 눌린 방향을 lastDir로 반영(수평/수직 우선은 입력 시점으로 결정)
+        type D = 'left' | 'right' | 'up' | 'down';
+        const candidates: D[] = [];
+        if (pressedLeft) candidates.push('left');
+        if (pressedRight) candidates.push('right');
+        if (pressedUp) candidates.push('up');
+        if (pressedDown) candidates.push('down');
+        if (candidates.length > 0) {
+          let best: D = candidates[0] as D;
+          for (const d of candidates as D[]) {
+            if (this.dirDownAt[d] >= this.dirDownAt[best]) best = d;
+          }
+          this.lastDir = best;
+        } else {
+          // 축 기반 보정(선택)
+          if (ax < 0) this.lastDir = 'left';
+          else if (ax > 0) this.lastDir = 'right';
+          else if (ay < 0) this.lastDir = 'up';
+          else if (ay > 0) this.lastDir = 'down';
+        }
+
+        const key = 'ginseng-walk-' + this.lastDir; // GameScene에서 등록된 애니메이션 키 사용
+        this.sprite.anims.play(key, true);
+
+        if (!this.wasMoving) {
+          const anim = this.sprite.scene.anims.get(key);
+          if (anim && anim.frames[1]) {
+            this.sprite.anims.setCurrentFrame(anim.frames[1]);
+          }
+        }
+      } else {
+        // 키가 없으면 즉시 idle 프레임 고정(정지 유지)
+        const first = GINSENG_IDLE[this.lastDir];
+        this.sprite.anims.stop();
+        this.sprite.setFrame(first);
+      }
+
+      this.wasMoving = anyPressed;
+
+      // 위치 저장(정지라도 주기 저장 유지)
+      const getFrame = (this.sprite.scene.game as any).getFrame?.bind(this.sprite.scene.game);
+      if (getFrame && getFrame() % 60 === 0) {
+        this.savePosition();
+      }
+      return; // sunflower 모드에서는 나머지 이동 로직 무시
+    }
 
     // --- 최근 입력(Last-pressed) 트래킹: 화살표 + (있다면) WASD도 함께 처리
     const kLeft  = [cursors.left,  (cursors as any)?.A].filter(Boolean) as Phaser.Input.Keyboard.Key[];
@@ -240,5 +310,13 @@ export class GinsengPlayer {
     console.log(`경험치: ${this.stats.experience}`);
     console.log(`레벨: ${this.stats.level}`);
     console.log(`위치: (${Math.round(this.sprite.x)}, ${Math.round(this.sprite.y)})`);
+  }
+
+  // ───────── 외부 제어용: 해바라기 변신 토글 ─────────
+  public setSunflowerMode(active: boolean): void {
+    if (this.sunflowerMode === active) return;
+    this.sunflowerMode = active;
+    // 전환 즉시 정지/아이들화로 시각적 안정성 확보
+    if (active) this.haltMovementAndIdle();
   }
 }
