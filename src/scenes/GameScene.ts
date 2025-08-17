@@ -43,9 +43,9 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48
     });
-    this.load.spritesheet('thunder', 'assets/gimmicks/thunder.png', {
-      frameWidth: 128,
-      frameHeight: 192
+    this.load.spritesheet('thunder', 'assets/gimmicks/thunder6.png', {
+      frameWidth: 256,
+      frameHeight: 384
     });
     this.load.spritesheet('ginseng_sunflower', 'assets/gimmicks/sunflower.png', {
       frameWidth: 64,
