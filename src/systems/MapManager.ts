@@ -13,6 +13,7 @@ export class MapManager {
   private collision: MapCollisionManager;
   private portals: PortalManager;
   private lastTileSize: number = 64;
+  private currentTilesTextureKey: string = 'tiles';
   // 현재 로드된 맵 키(필요 시 노출/사용). 미사용 시 최적화에서 제외하려면 주석 처리 가능
   // private currentMapKey: string | null = null;
 
@@ -93,6 +94,7 @@ export class MapManager {
     }
 
     const tilesTextureKey = this.scene.textures.exists(perMapTilesKey) ? perMapTilesKey : 'tiles';
+    this.currentTilesTextureKey = tilesTextureKey;
 
     // 렌더링
     this.renderer.render(data, layerDepths, tilesTextureKey);
@@ -148,6 +150,10 @@ export class MapManager {
 
   public getTileSize(): number {
     return this.lastTileSize;
+  }
+
+  public getTilesTextureKey(): string {
+    return this.currentTilesTextureKey || 'tiles';
   }
 }
 
