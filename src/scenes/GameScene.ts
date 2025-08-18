@@ -411,7 +411,9 @@ export class GameScene extends Phaser.Scene {
     const p2 = this.player2?.sprite;
     if (!p2) return;
     this.triggerThunderAt(p2.x, p2.y);
-    this.player2.toggleForm();
+    this.time.delayedCall(350, () => {
+      this.player2?.toggleForm();
+    });
   }
 
   private triggerThunderAt(x: number, y: number): void {
