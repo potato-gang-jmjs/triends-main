@@ -32,6 +32,18 @@ NPC와의 상호작용을 위한 YAML 기반 대화 관리 시스템
 - 커스텀 이벤트 트리거
 - 확장 가능한 액션 타입
 
+### ⚡ [특수능력 시스템 (Ability System)](./abillity-system.md)
+1P 물뿌리개 시스템과 2P 덩굴 확장 시스템
+
+- 1P 물뿌리개: 상태 기반 물뿌리기, 2P 덩굴 능력 부스트
+- 2P 덩굴 확장: 조준/확장/수축, 1P 훅/끌어오기 기믹
+- 물 타일 인접 판정 및 상호작용
+- 번개 효과와 형태 변환 시스템
+- 실시간 UI 및 힌트 시스템
+
+#### 📘 [물뿌리개 시스템 상세 가이드](./watering-can-system.md)
+P1 물뿌리개 시스템의 구현 세부사항과 확장 가이드
+
 ### 🎮 [이동/컨트롤 시스템 (Movement System)](./movement-system.md)
 1P/2P 동시 조작과 태그 이동(텔레포트) 시스템
 ### 🗺️ [맵/타일맵 시스템 (Map System)](./map-system.md)
@@ -91,6 +103,12 @@ Potato Gang 시스템 구조:
 │   ├── 아이템 액션        # add_item, remove_item
 │   ├── 플래그 액션        # set_flag
 │   └── 이벤트 액션        # trigger_event
+│
+├── ⚡ 특수능력 시스템
+│   ├── WateringCanSystem  # 1P 물뿌리개
+│   ├── VineExtensionSystem # 2P 덩굴 확장
+│   ├── Player/GinsengPlayer # 능력 엔티티
+│   └── GlobalVariableManager # 상태 관리
 │
 └── 💾 이동/컨트롤 시스템
     ├── Player, GinsengPlayer  # 1P/2P

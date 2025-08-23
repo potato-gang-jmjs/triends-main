@@ -11,6 +11,7 @@ import { SaveManager } from '../systems/SaveManager';
 import { GlobalVariableManager } from '../systems/GlobalVariableManager';
 import { MapManager } from '../systems/MapManager';
 import { VineExtensionSystem } from '../systems/VineExtensionSystem';
+import { WateringCanSystem } from '../systems/WateringCanSystem';
 import { ObjectManager } from '../systems/ObjectManager';
 import { ActionProcessor } from '../systems/ActionProcessor';
 
@@ -31,6 +32,7 @@ export class GameScene extends Phaser.Scene {
   private isTransitioning = false;
   private portalHintContainer!: Phaser.GameObjects.Container;
   private vineSystem!: VineExtensionSystem;
+  private wateringSystem!: WateringCanSystem;
   
   // 하트 UI
   private heartsTextP1!: Phaser.GameObjects.Text;
@@ -61,6 +63,14 @@ export class GameScene extends Phaser.Scene {
       frameHeight: 64
     });
     this.load.spritesheet('player', 'assets/characters/astronaut_walking.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet('player_watering', 'assets/characters/astronaut_walking_water.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet('water_entity', 'assets/characters/astronaut_water.png', {
       frameWidth: 64,
       frameHeight: 64
     });
@@ -202,6 +212,44 @@ export class GameScene extends Phaser.Scene {
       frameRate: 8,
       repeat: -1
     });
+
+    // 물뿌리개 애니메이션 등록
+    this.anims.create({
+      key: 'player-watering-down',
+      frames: this.anims.generateFrameNumbers('player_watering', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-watering-left',
+      frames: this.anims.generateFrameNumbers('player_watering', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-watering-right',
+      frames: this.anims.generateFrameNumbers('player_watering', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-watering-up',
+      frames: this.anims.generateFrameNumbers('player_watering', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    // 물 스프레이 애니메이션 등록
+    if (this.textures.exists('water_entity')) {
+      this.anims.create({
+        key: 'water-spray',
+        frames: this.anims.generateFrameNumbers('water_entity', { start: 0, end: 3 }),
+        frameRate: 12,
+        repeat: -1
+      });
+    } else {
+      console.warn('water_entity 텍스처가 로드되지 않아 물 스프레이 애니메이션을 등록할 수 없습니다.');
+    }
     
     // 플레이어 생성
     // Player1 생성
@@ -226,6 +274,9 @@ export class GameScene extends Phaser.Scene {
     
     // 인삼이 특수능력 시스템 (P1 스프라이트 참조 전달)
     this.vineSystem = new VineExtensionSystem(this, this.player2.sprite, this.player.sprite, this.player2);
+    
+    // 물뿌리개 시스템 (P1 전용)
+    this.wateringSystem = new WateringCanSystem(this, this.player, this.player2);
     
     // 대화 시스템 이벤트 연결
     this.setupDialogueEvents();
@@ -744,16 +795,26 @@ export class GameScene extends Phaser.Scene {
     // 포탈 힌트 업데이트
     this.updatePortalHint();
 
-    // 물 근처 여부 업데이트 (P2 기준)
+    // 물 근처 여부 업데이트 (P1, P2 기준)
     const gvm = GlobalVariableManager.getInstance();
-    const near = this.mapManager.isPointAdjacentToWater(this.player2.sprite.x, this.player2.sprite.y);
-    if (gvm.get('isNearWater') !== near) {
-      gvm.set('isNearWater', near);
+    const nearP2 = this.mapManager.isPointAdjacentToWater(this.player2.sprite.x, this.player2.sprite.y);
+    const nearP1 = this.mapManager.isPointAdjacentToWater(this.player.sprite.x, this.player.sprite.y);
+    
+    if (gvm.get('isNearWater') !== nearP2) {
+      gvm.set('isNearWater', nearP2);
+    }
+    
+    // 1P 물 타일 근처 여부 별도 관리
+    if (gvm.get('isP1NearWater') !== nearP1) {
+      gvm.set('isP1NearWater', nearP1);
     }
 
     // 덩굴 시스템 업데이트
     const delta = this.game.loop.delta;
     this.vineSystem.update(delta);
+
+    // 물뿌리개 시스템 업데이트
+    this.wateringSystem.update(delta);
 
     // 오브젝트 업데이트
     this.objectManager?.update(this.time.now, this.game.loop.delta);

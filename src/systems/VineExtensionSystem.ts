@@ -89,6 +89,19 @@ export class VineExtensionSystem {
     this.pHintText.setVisible(false);
   }
 
+  private updatePHintText(): void {
+    const isNearWater = !!this.gvm.get('isNearWater');
+    const isWaterNearby = !!this.gvm.get('waterNearby');
+    
+    if (isWaterNearby && !isNearWater) {
+      this.pHintText.setText('E 능력 사용 가능: 물뿌리개 효과!');
+      this.pHintText.setColor('#4fc3f7');
+    } else if (isNearWater) {
+      this.pHintText.setText('E 능력 사용 가능: 물 근처입니다');
+      this.pHintText.setColor('#aaffaa');
+    }
+  }
+
   public setPHintVisible(visible: boolean): void {
     this.pHintText?.setVisible(visible);
   }
@@ -120,12 +133,19 @@ export class VineExtensionSystem {
 
   public update(deltaMs: number): void {
     const isNearWater = !!this.gvm.get('isNearWater');
+    const isWaterNearby = !!this.gvm.get('waterNearby'); // 1P의 물뿌리기로 인한 효과
+    const canUseVine = isNearWater || isWaterNearby;
 
-    // 힌트 토글: 물 근처이고, 대기 상태일 때만 보이게
-    this.setPHintVisible(isNearWater && this.state === 'idle');
+    // 힌트 토글: 물 근처이거나 물뿌리기 효과가 있고, 대기 상태일 때만 보이게
+    if (canUseVine && this.state === 'idle') {
+      this.updatePHintText();
+      this.setPHintVisible(true);
+    } else {
+      this.setPHintVisible(false);
+    }
 
-    // 시작: 물 근처에서 E를 누르면 즉시 확장 시작
-    if (isNearWater && this.state === 'idle' && Phaser.Input.Keyboard.JustDown(this.keyE)) {
+    // 시작: 물 근처이거나 물뿌리기 효과가 있을 때 E를 누르면 즉시 확장 시작
+    if (canUseVine && this.state === 'idle' && Phaser.Input.Keyboard.JustDown(this.keyE)) {
       this.state = 'extending';
       // 번개 효과 트리거
       this.triggerThunderEffect();
