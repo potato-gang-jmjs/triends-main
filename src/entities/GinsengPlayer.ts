@@ -88,6 +88,26 @@ export class GinsengPlayer {
     // 1회 재생 애니메이션 시작
     this.sprite.anims.play(keyOnce, true);
 
+    // 마지막 프레임에서 탄 발사 이벤트 발생
+    const onUpdate = (_: Phaser.Animations.Animation, frame: Phaser.Animations.AnimationFrame) => {
+      // 현재 재생 중인 애니메이션이 이번 공격(one-shot)인지 확인
+      if (this.sprite.anims.getName() !== keyOnce) return;
+
+      // 마지막 프레임에서 1회만 발사
+      if (frame.isLast) {
+        this.sprite.off(Phaser.Animations.Events.ANIMATION_UPDATE, onUpdate);
+
+        // 발사 위치와 방향 전달 (이벤트를 통해 씬에서 실제 스폰 처리)
+        this.sprite.emit('sunflower-shoot', {
+          x: this.sprite.x,
+          y: this.sprite.y,
+          dir: this.lastDir as 'up' | 'left' | 'right' | 'down'
+        });
+      }
+    };
+    this.sprite.on(Phaser.Animations.Events.ANIMATION_UPDATE, onUpdate);
+
+
     // 애니메이션 완료 시: 공격 종료 + 쿨다운 해제 + idle 프레임 고정
     const onComplete = (anim: Phaser.Animations.Animation) => {
       if (anim.key !== keyOnce) return;
