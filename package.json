@@ -10,6 +10,9 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.13",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "stream-browserify": "^3.0.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
   },

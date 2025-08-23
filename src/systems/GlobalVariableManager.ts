@@ -99,6 +99,16 @@ export class GlobalVariableManager {
       this.set('player_name', '모험가');
     }
 
+    // Ginseng 특수능력 관련 기본값
+    if (!this.has('isNearWater')) {
+      this.set('isNearWater', false);
+    }
+    // waterGage는 더 이상 사용하지 않음
+    if (!this.has('vine_collision')) this.set('vine_collision', false);
+    if (!this.has('collision')) this.set('collision', false);
+    if (!this.has('isVineSkillActivated')) this.set('isVineSkillActivated', true);
+    if (!this.has('p1VineLocked')) this.set('p1VineLocked', false);
+
     console.log('기본 전역 변수 초기화 완료');
   }
 } 
