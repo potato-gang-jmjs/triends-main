@@ -134,31 +134,32 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    // 인삼이 해바라기 애니메이션 등록
+    // 해바라기 공격 애니메이션 등록
     this.anims.create({
-      key: 'ginseng-sunflower-down',
+      key: 'ginseng-sunflower-down-once',
       frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 0, end: 3 }),
-      frameRate: 8,
-      repeat: -1
+      frameRate: 10,
+      repeat: 0
     });
     this.anims.create({
-      key: 'ginseng-sunflower-left',
+      key: 'ginseng-sunflower-left-once',
       frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 4, end: 7 }),
-      frameRate: 8,
-      repeat: -1
+      frameRate: 10,
+      repeat: 0
     });
     this.anims.create({
-      key: 'ginseng-sunflower-right',
+      key: 'ginseng-sunflower-right-once',
       frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 8, end: 11 }),
-      frameRate: 8,
-      repeat: -1
+      frameRate: 10,
+      repeat: 0
     });
     this.anims.create({
-      key: 'ginseng-sunflower-up',
+      key: 'ginseng-sunflower-up-once',
       frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 12, end: 15 }),
-      frameRate: 8,
-      repeat: -1
+      frameRate: 10,
+      repeat: 0
     });
+
     
     // 플레이어 생성
     // Player1 생성
@@ -410,21 +411,40 @@ export class GameScene extends Phaser.Scene {
     if (this.isTransitioning || this.dialogueManager.getState().isActive) return;
     const p2 = this.player2?.sprite;
     if (!p2) return;
-    this.triggerThunderAt(p2.x, p2.y);
+
+    // R 누른 순간부터 이동 잠금
+    this.player2.lockMovement();
+
+    // 이번 토글 이후 형태가 무엇인지 미리 계산
+    const willBecomeSunflower = !this.player2.isSunflowerForm();
+
+    // 번개 이펙트: 복귀(해바라기→인삼) 시에만 끝날 때 잠금 해제
+    this.triggerThunderAt(p2.x, p2.y, () => {
+      if (!willBecomeSunflower) {
+        // 인삼으로 돌아오는 경우: 번개 애니메이션이 끝난 시점에만 해제
+        this.player2.unlockMovement();
+      }
+    });
+
+    // 형태 전환은 살짝 지연(기존 로직 유지)
     this.time.delayedCall(350, () => {
       this.player2?.toggleForm();
+      // 해바라기로 변신한 경우는 계속 잠금 유지 (다음 복귀 때까지)
     });
   }
 
-  private triggerThunderAt(x: number, y: number): void {
+  private triggerThunderAt(x: number, y: number, onComplete?: () => void): void {
     const s = this.add.sprite(x, y, 'thunder', 0);
     s.setOrigin(0.5, 1);
     s.setDepth(1500);
     s.play('thunder-strike');
+
     s.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
       s.destroy();
+      if (onComplete) onComplete();
     });
   }
+
 
   private handleSpaceKeyPress(): void {
     const dialogueState = this.dialogueManager.getState();

@@ -43,6 +43,68 @@ export class GinsengPlayer {
   };
   private form: 'ginseng' | 'sunflower';
 
+  // 이동 잠금 플래그: 변신 시작~해바라기 상태~복귀 번개 종료까지 이동 차단
+  private movementLocked: boolean = false;
+  // 해바라기 공격 상태/쿨다운
+  private isAttackingSunflower: boolean = false;
+  private attackOnCooldown: boolean = false;
+
+
+  public lockMovement(): void {
+    this.movementLocked = true;
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setVelocity(0, 0);
+      body.stop();
+    }
+  }
+
+  public unlockMovement(): void {
+    this.movementLocked = false;
+    // 해제 시에는 다음 프레임의 입력으로 자연스럽게 전환
+  }
+
+  public isMovementLocked(): boolean {
+    return this.movementLocked;
+  }
+
+  private triggerSunflowerAttack(dir: Dir): void {
+    if (this.isAttackingSunflower || this.attackOnCooldown) return;
+
+    this.lastDir = dir;
+    const keyOnce = `ginseng-sunflower-${dir}-once`;
+
+    // 상태 진입
+    this.isAttackingSunflower = true;
+    this.attackOnCooldown = true;
+
+    // 속도 0 유지
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setVelocity(0, 0);
+      body.stop();
+    }
+
+    // 1회 재생 애니메이션 시작
+    this.sprite.anims.play(keyOnce, true);
+
+    // 애니메이션 완료 시: 공격 종료 + 쿨다운 해제 + idle 프레임 고정
+    const onComplete = (anim: Phaser.Animations.Animation) => {
+      if (anim.key !== keyOnce) return;
+      this.sprite.off(Phaser.Animations.Events.ANIMATION_COMPLETE, onComplete);
+
+      this.isAttackingSunflower = false;
+      this.attackOnCooldown = false;
+
+      // idle 프레임으로 마무리
+      const idle = SUNFLOWER_IDLE;
+      this.sprite.anims.stop();
+      this.sprite.setFrame(idle[this.lastDir]);
+    };
+
+    this.sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, onComplete);
+  }
+
   // (선택) Player와 호환되는 최소 걷기 유지시간 변수를 쓰고 있다면 그대로 활용됨
   // private minWalkDuration = 100;
   // private walkStartAt = 0;
@@ -76,6 +138,50 @@ export class GinsengPlayer {
   // Player와 동일한 시그니처
   public update(cursors: Phaser.Types.Input.Keyboard.CursorKeys): void {
     if (!cursors) return;
+
+    // 이동 잠금 상태: 속도 0, (해바라기 폼일 때만) WASD 단발(JustDown)로 공격 트리거
+    if (this.movementLocked) {
+      const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+      if (body) {
+        body.setVelocity(0, 0);
+        body.stop();
+      }
+
+      // 기본 idle 유지 준비
+      const idle = (this.form === 'ginseng' ? GINSENG_IDLE : SUNFLOWER_IDLE);
+
+      if (this.form === 'sunflower') {
+        // "딸깍" 1회 입력 감지
+        const L = cursors.left, R = cursors.right, U = cursors.up, D = cursors.down;
+        const justLeft  = L && Phaser.Input.Keyboard.JustDown(L);
+        const justRight = R && Phaser.Input.Keyboard.JustDown(R);
+        const justUp    = U && Phaser.Input.Keyboard.JustDown(U);
+        const justDown  = D && Phaser.Input.Keyboard.JustDown(D);
+
+        // 이미 공격 중이면 입력 무시(인터럽트 금지)
+        if (!this.isAttackingSunflower && !this.attackOnCooldown) {
+          if (justLeft)       this.triggerSunflowerAttack('left');
+          else if (justRight) this.triggerSunflowerAttack('right');
+          else if (justUp)    this.triggerSunflowerAttack('up');
+          else if (justDown)  this.triggerSunflowerAttack('down');
+        }
+
+        // 공격 중이 아닐 때는 idle 프레임으로 유지
+        if (!this.isAttackingSunflower) {
+          this.sprite.anims.stop();
+          this.sprite.setFrame(idle[this.lastDir]);
+        }
+      } else {
+        // 인삼 폼: 잠금 중에는 항상 idle
+        this.sprite.anims.stop();
+        this.sprite.setFrame(idle[this.lastDir]);
+      }
+
+      this.sprite.setRotation(0);
+      this.wasMoving = false;
+      return;
+    }
+
 
     // --- 최근 입력(Last-pressed) 트래킹: 화살표 + (있다면) WASD도 함께 처리
     const kLeft  = [cursors.left,  (cursors as any)?.A].filter(Boolean) as Phaser.Input.Keyboard.Key[];
