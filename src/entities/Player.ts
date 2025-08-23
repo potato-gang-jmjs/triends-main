@@ -208,6 +208,18 @@ export class Player {
     }
   }
 
+  public haltMovementAndIdle(): void {
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.stop();
+    this.sprite.setVelocity(0, 0);
+    // idle 프레임 설정(우주인 시트 기준 lastDir 유지)
+    if (this.usingAstronaut) {
+      this.sprite.anims.stop();
+      this.sprite.setFrame(ASTRONAUT_IDLE[this.lastDir]);
+    }
+    this.wasMoving = false;
+  }
+
   public savePosition(): void {
     // 현재 저장 데이터 로드
     const current = SaveManager.loadGame();

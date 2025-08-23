@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TilesMeta } from '../types/MapTypes';
+import { MapData, MapLayer, MapTile, TilesMeta } from '../types/MapTypes';
 import { MapLoader } from './MapLoader';
 import { MapRenderer } from './MapRenderer';
 import { MapCollisionManager, CollisionMode } from './MapCollisionManager';
@@ -13,6 +13,7 @@ export class MapManager {
   private collision: MapCollisionManager;
   private portals: PortalManager;
   private lastTileSize: number = 64;
+  private currentMapData: MapData | null = null;
   private currentTilesTextureKey: string = 'tiles';
   // 현재 로드된 맵 키(필요 시 노출/사용). 미사용 시 최적화에서 제외하려면 주석 처리 가능
   // private currentMapKey: string | null = null;
@@ -48,6 +49,7 @@ export class MapManager {
     }
     // this.currentMapKey = mapKey;
     this.lastTileSize = data.tileSize;
+    this.currentMapData = data;
 
     // 카메라/월드 경계
     const worldWidth = data.tileSize * data.mapWidth;
@@ -150,6 +152,47 @@ export class MapManager {
 
   public getTileSize(): number {
     return this.lastTileSize;
+  }
+
+  public getCurrentMapData(): MapData | null {
+    return this.currentMapData;
+  }
+
+  /**
+   * 주어진 월드 좌표가 물 타일 인접(상하좌우 4방 기준)에 있는지 판단
+   * 맵 데이터의 레이어에 `is_water: true` 가 설정된 레이어의 타일을 기준으로 검사한다.
+   * 맵 데이터가 없거나 물 레이어가 없으면 false.
+   */
+  public isPointAdjacentToWater(worldX: number, worldY: number): boolean {
+    const data = this.currentMapData;
+    if (!data) return false;
+    const tileSize = data.tileSize || this.lastTileSize;
+    const tx = Math.floor(worldX / tileSize);
+    const ty = Math.floor(worldY / tileSize);
+
+    // 물 레이어만 필터링
+    const waterLayers: MapLayer[] = (data.layers || []).filter(l => (l as any).is_water === true);
+    if (waterLayers.length === 0) return false;
+
+    const isWaterAt = (x: number, y: number): boolean => {
+      for (const layer of waterLayers) {
+        if (!layer.tiles || layer.tiles.length === 0) continue;
+        // 선형 탐색 (맵이 크면 세트 구축 고려 가능)
+        for (const t of layer.tiles as MapTile[]) {
+          if (t.x === x && t.y === y) return true;
+        }
+      }
+      return false;
+    };
+
+    // 4방향 인접 + 현재 위치가 물인 경우 포함
+    if (isWaterAt(tx, ty)) return true;
+    if (isWaterAt(tx + 1, ty)) return true;
+    if (isWaterAt(tx - 1, ty)) return true;
+    if (isWaterAt(tx, ty + 1)) return true;
+    if (isWaterAt(tx, ty - 1)) return true;
+
+    return false;
   }
 
   public getTilesTextureKey(): string {

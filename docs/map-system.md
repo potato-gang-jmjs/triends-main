@@ -44,6 +44,19 @@ public/assets/
 - x,y: 타일 그리드 좌표
 - collider: true면 충돌 생성, false면 통과
 
+### 추가 필드: is_water (레이어 단위)
+- `is_water: true`를 레이어에 지정하면 해당 레이어의 타일이 물로 간주됩니다.
+- 물 인접 판정은 `MapManager.isPointAdjacentToWater(worldX, worldY)`에서 수행하며, 4방(상/하/좌/우) 인접 포함입니다.
+- 예시:
+```json
+{
+  "name": "River",
+  "tiles": [{ "id": "200", "x": 10, "y": 5 }],
+  "collider": false,
+  "is_water": true
+}
+```
+
 ## layers.json (선택)
 ```json
 {
@@ -58,6 +71,7 @@ public/assets/
 
 ## 런타임 구성 요소
 - MapManager: 맵 로드/언로드, 카메라/월드 경계 설정, 충돌 연결, 디버그 토글
+  - `isPointAdjacentToWater(x,y)`: 현재 로드된 맵 데이터의 `is_water` 레이어를 기준으로 인접 물 여부 반환
 - MapLoader: Phaser 캐시(json)에서 맵 데이터 조회/검증
 - MapRenderer: 레이어별 타일을 Image로 생성, depth 적용 (맵별 타일 텍스처 키 지원)
 - MapCollisionManager: collider=true 타일 위치에 Arcade 정적 바디 생성, 플레이어와 충돌 연결

@@ -8,6 +8,7 @@ export interface MapLayer {
   name: string;
   tiles: MapTile[];
   collider: boolean;
+  is_water?: boolean; // 물 타일 레이어 여부
 }
 
 export interface MapData {

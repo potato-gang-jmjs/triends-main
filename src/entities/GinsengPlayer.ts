@@ -177,6 +177,16 @@ export class GinsengPlayer {
     }
   }
 
+  public haltMovementAndIdle(): void {
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.stop();
+    this.sprite.setVelocity(0, 0);
+    const first = GINSENG_IDLE[this.lastDir];
+    this.sprite.anims.stop();
+    this.sprite.setFrame(first);
+    this.wasMoving = false;
+  }
+
   public savePosition(): void {
     // 현재 저장 데이터 로드
     const current = SaveManager.loadGame();
