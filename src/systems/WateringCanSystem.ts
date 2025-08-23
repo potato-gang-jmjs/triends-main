@@ -23,7 +23,7 @@ export class WateringCanSystem {
   private hintText!: Phaser.GameObjects.Text;
 
   // 입력
-  private keyP!: Phaser.Input.Keyboard.Key;
+  private keyShift!: Phaser.Input.Keyboard.Key;
 
   // 범위 설정 (적당히 조절)
   private player2InteractionRange = 225; // 2P와의 상호작용 범위 (1.5배 확대)
@@ -34,7 +34,7 @@ export class WateringCanSystem {
     this.player2 = player2;
 
     // 입력 바인딩
-    this.keyP = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    this.keyShift = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
 
     // UI 생성
     this.createUI();
@@ -54,7 +54,7 @@ export class WateringCanSystem {
     // 힌트 텍스트
     const cx = this.scene.cameras.main.width / 2;
     const cy = this.scene.cameras.main.height - 180;
-    this.hintText = this.scene.add.text(cx, cy, 'P키: 물뿌리개 사용 가능', {
+    this.hintText = this.scene.add.text(cx, cy, 'Shift키: 물뿌리개 사용 가능', {
       fontSize: '16px', 
       color: '#4fc3f7', 
       fontFamily: 'monospace', 
@@ -225,14 +225,14 @@ export class WateringCanSystem {
     
     // 힌트 표시 조건 및 텍스트 업데이트
     if (this.state === 'equipped' && isNearWater && this.waterAmount > 0) {
-      this.hintText.setText('P키: 물뿌리기 시작');
+      this.hintText.setText('Shift키: 물뿌리기 시작');
       this.setHintVisible(true);
     } else {
       this.setHintVisible(false);
     }
 
-    // P키 입력 처리
-    if (Phaser.Input.Keyboard.JustDown(this.keyP)) {
+    // Shift 입력 처리
+    if (Phaser.Input.Keyboard.JustDown(this.keyShift)) {
       if (this.state === 'idle' && isNearWater) {
         // idle -> equipped: 물뿌리개 장착만
         if (this.waterAmount <= 0) {
@@ -242,7 +242,7 @@ export class WateringCanSystem {
         }
         this.state = 'equipped';
         this.switchToWateringCanSprite();
-        console.log('물뿌리개를 장착했습니다. P키를 다시 눌러 물뿌리기를 시작하세요.');
+        console.log('물뿌리개를 장착했습니다. Shift키를 다시 눌러 물뿌리기를 시작하세요.');
       } else if (this.state === 'equipped' && this.waterAmount > 0) {
         // equipped -> watering: 물뿌리기 시작
         this.state = 'watering';
@@ -257,10 +257,10 @@ export class WateringCanSystem {
       }
     }
 
-    // P키 홀드/해제 처리 - watering 상태에서만
+    // Shift 홀드/해제 처리 - watering 상태에서만
     if (this.state === 'watering') {
-      if (!this.keyP.isDown) {
-        // P키를 떼면 물뿌리기 중지, equipped 상태로 복귀
+      if (!this.keyShift.isDown) {
+        // Shift키를 떼면 물뿌리기 중지, equipped 상태로 복귀
         this.isWatering = false;
         this.destroyWaterEntity();
         this.deactivatePlayer2VineAbility();
@@ -300,8 +300,8 @@ export class WateringCanSystem {
       }
     }
 
-    // 물 소모 처리 - P키가 실제로 눌려있을 때만
-    if (this.state === 'watering' && this.isWatering && this.keyP.isDown) {
+    // 물 소모 처리 - Shift가 실제로 눌려있을 때만
+    if (this.state === 'watering' && this.isWatering && this.keyShift.isDown) {
       if (this.waterAmount > 0) {
         // 물 소모 (1초에 1씩)
         this.waterAmount -= deltaMs / 1000;
