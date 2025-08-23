@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { GlobalVariableManager } from './GlobalVariableManager';
+import { GinsengPlayer } from '../entities/GinsengPlayer';
 
 export type VineState = 'idle' | 'extending' | 'retracting';
 
 export class VineExtensionSystem {
   private scene: Phaser.Scene;
   private owner: Phaser.Physics.Arcade.Sprite;
+  private ginsengPlayer?: GinsengPlayer;
   private player1?: Phaser.Physics.Arcade.Sprite;
   private gvm = GlobalVariableManager.getInstance();
 
@@ -32,9 +34,10 @@ export class VineExtensionSystem {
   private keyQ!: Phaser.Input.Keyboard.Key;
   private dirKeys: { up: Phaser.Input.Keyboard.Key; down: Phaser.Input.Keyboard.Key; left: Phaser.Input.Keyboard.Key; right: Phaser.Input.Keyboard.Key; };
 
-  constructor(scene: Phaser.Scene, owner: Phaser.Physics.Arcade.Sprite, player1?: Phaser.Physics.Arcade.Sprite) {
+  constructor(scene: Phaser.Scene, owner: Phaser.Physics.Arcade.Sprite, player1?: Phaser.Physics.Arcade.Sprite, ginsengPlayer?: GinsengPlayer) {
     this.scene = scene;
     this.owner = owner;
+    this.ginsengPlayer = ginsengPlayer;
     this.player1 = player1;
     const body = owner.body as Phaser.Physics.Arcade.Body;
     this.sizePx = Math.max(body.width, body.height);
@@ -55,6 +58,21 @@ export class VineExtensionSystem {
 
     // UI 생성
     this.createPHintUI();
+  }
+
+  private triggerThunderEffect(): void {
+    if (!this.ginsengPlayer) return;
+    
+    const x = this.ginsengPlayer.sprite.x;
+    const y = this.ginsengPlayer.sprite.y;
+    
+    const thunderSprite = this.scene.add.sprite(x, y, 'thunder', 0);
+    thunderSprite.setOrigin(0.5, 1);
+    thunderSprite.setDepth(1500);
+    thunderSprite.play('thunder-strike');
+    thunderSprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      thunderSprite.destroy();
+    });
   }
 
   /** E 키가 눌려 있는 동안 이동을 잠금해야 하는지 여부 */
@@ -109,6 +127,13 @@ export class VineExtensionSystem {
     // 시작: 물 근처에서 E를 누르면 즉시 확장 시작
     if (isNearWater && this.state === 'idle' && Phaser.Input.Keyboard.JustDown(this.keyE)) {
       this.state = 'extending';
+      // 번개 효과 트리거
+      this.triggerThunderEffect();
+      // 인삼이를 vine 형태로 변신
+      if (this.ginsengPlayer) {
+        this.ginsengPlayer.setForm('vine');
+      }
+      
       // 초기 방향: Q+방향키가 눌려있다면 해당 방향, 아니면 우측
       this.vineDirection = this.computeDirectionFromKeys();
       if (this.vineDirection.lengthSq() === 0) this.vineDirection.set(1, 0);
@@ -167,6 +192,14 @@ export class VineExtensionSystem {
 
       if (this.currentLengthPx <= 0) {
         this.state = 'idle';
+        
+        // 번개 효과 트리거
+        this.triggerThunderEffect();
+        // 인삼이를 원래 ginseng 형태로 복원
+        if (this.ginsengPlayer) {
+          this.ginsengPlayer.setForm('ginseng');
+        }
+        
         this.destroyVine();
         this.gvm.set('vine_collision', false);
         this.gvm.set('collision', false);
