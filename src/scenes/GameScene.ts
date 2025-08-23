@@ -56,6 +56,10 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64
     });
+    this.load.spritesheet('ginseng_vine', 'assets/gimmicks/vine.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
     this.load.spritesheet('player', 'assets/characters/astronaut_walking.png', {
       frameWidth: 64,
       frameHeight: 64
@@ -172,6 +176,32 @@ export class GameScene extends Phaser.Scene {
       frameRate: 8,
       repeat: -1
     });
+
+    // 인삼이 덩굴 애니메이션 등록
+    this.anims.create({
+      key: 'ginseng-vine-down',
+      frames: this.anims.generateFrameNumbers('ginseng_vine', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-vine-left',
+      frames: this.anims.generateFrameNumbers('ginseng_vine', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-vine-right',
+      frames: this.anims.generateFrameNumbers('ginseng_vine', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-vine-up',
+      frames: this.anims.generateFrameNumbers('ginseng_vine', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
     
     // 플레이어 생성
     // Player1 생성
@@ -195,7 +225,7 @@ export class GameScene extends Phaser.Scene {
     GlobalVariableManager.getInstance().initializeDefaults();
     
     // 인삼이 특수능력 시스템 (P1 스프라이트 참조 전달)
-    this.vineSystem = new VineExtensionSystem(this, this.player2.sprite, this.player.sprite);
+    this.vineSystem = new VineExtensionSystem(this, this.player2.sprite, this.player.sprite, this.player2);
     
     // 대화 시스템 이벤트 연결
     this.setupDialogueEvents();
