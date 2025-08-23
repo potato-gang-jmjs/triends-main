@@ -10,6 +10,8 @@ import { DialogueBox } from '../ui/DialogueBox';
 import { SaveManager } from '../systems/SaveManager';
 import { GlobalVariableManager } from '../systems/GlobalVariableManager';
 import { MapManager } from '../systems/MapManager';
+import { ObjectManager } from '../systems/ObjectManager';
+import { ActionProcessor } from '../systems/ActionProcessor';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -24,6 +26,7 @@ export class GameScene extends Phaser.Scene {
   private xKey!: Phaser.Input.Keyboard.Key;
   private rKey!: Phaser.Input.Keyboard.Key;
   private mapManager!: MapManager;
+  private objectManager!: ObjectManager;
   private isTransitioning = false;
   private portalHintContainer!: Phaser.GameObjects.Container;
   
@@ -67,7 +70,15 @@ export class GameScene extends Phaser.Scene {
     // 맵 로드/충돌 구성
     this.mapManager = new MapManager(this);
     this.mapManager.setCollisionMode('arcade');
-    this.mapManager.load('map:main').then(() => this.loadNPCsForMap('main'));
+    this.mapManager.load('map:main').then(async () => {
+      await this.loadNPCsForMap('main');
+      // Objects
+      const tilesKey = this.mapManager.getTilesTextureKey();
+      const tileSize = this.mapManager.getTileSize();
+      this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
+      await this.objectManager.load('main', tilesKey, tileSize);
+      this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
+    });
 
     // 우주인 애니메이션 등록
     this.anims.create({
@@ -483,6 +494,8 @@ export class GameScene extends Phaser.Scene {
 
         // 페이드 아웃 후 전환 수행
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, async () => {
+          // save object states for current map
+          this.objectManager?.saveState();
           this.mapManager.unload();
           const ok = await this.mapManager.load(nextKey);
           if (!ok) {
@@ -504,6 +517,14 @@ export class GameScene extends Phaser.Scene {
           // 새 맵 충돌체에 플레이어 재연결
           this.mapManager.attachPlayer(this.player.sprite);
           this.mapManager.attachPlayer(this.player2.sprite);
+
+          // reload objects for next map
+          const tilesKey2 = this.mapManager.getTilesTextureKey();
+          const tileSize2 = this.mapManager.getTileSize();
+          this.objectManager?.unload();
+          this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
+          await this.objectManager.load(nextMapId, tilesKey2, tileSize2);
+          this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
 
           this.cameras.main.startFollow(this.player.sprite);
 
@@ -678,6 +699,9 @@ export class GameScene extends Phaser.Scene {
 
     // 포탈 힌트 업데이트
     this.updatePortalHint();
+
+    // 오브젝트 업데이트
+    this.objectManager?.update(this.time.now, this.game.loop.delta);
 
     // 하트 UI 주기적 갱신 (약 4회/초)
     this.uiFrameTicker = (this.uiFrameTicker + 1) % 15;
