@@ -37,6 +37,8 @@ NPC와의 상호작용을 위한 YAML 기반 대화 관리 시스템
 ### 🗺️ [맵/타일맵 시스템 (Map System)](./map-system.md)
 Spritefusion JSON 기반 타일맵 로딩/렌더링/충돌 시스템
 
+- **Ginseng Sunflower Mode**: [ginseng-sunflower-mode.md](./ginseng-sunflower-mode.md)
+
 - 레이어별 depth 제어(layers.json)
 - collider=true 타일 충돌(Arcade Static Bodies)
 - 계단(Stairs) 통로 처리(collider:false)
