@@ -14,6 +14,7 @@ export class MapManager {
   private portals: PortalManager;
   private lastTileSize: number = 64;
   private currentMapData: MapData | null = null;
+  private currentTilesTextureKey: string = 'tiles';
   // 현재 로드된 맵 키(필요 시 노출/사용). 미사용 시 최적화에서 제외하려면 주석 처리 가능
   // private currentMapKey: string | null = null;
 
@@ -95,6 +96,7 @@ export class MapManager {
     }
 
     const tilesTextureKey = this.scene.textures.exists(perMapTilesKey) ? perMapTilesKey : 'tiles';
+    this.currentTilesTextureKey = tilesTextureKey;
 
     // 렌더링
     this.renderer.render(data, layerDepths, tilesTextureKey);
@@ -191,6 +193,10 @@ export class MapManager {
     if (isWaterAt(tx, ty - 1)) return true;
 
     return false;
+  }
+
+  public getTilesTextureKey(): string {
+    return this.currentTilesTextureKey || 'tiles';
   }
 }
 

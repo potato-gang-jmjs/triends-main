@@ -11,6 +11,8 @@ import { SaveManager } from '../systems/SaveManager';
 import { GlobalVariableManager } from '../systems/GlobalVariableManager';
 import { MapManager } from '../systems/MapManager';
 import { VineExtensionSystem } from '../systems/VineExtensionSystem';
+import { ObjectManager } from '../systems/ObjectManager';
+import { ActionProcessor } from '../systems/ActionProcessor';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -23,7 +25,9 @@ export class GameScene extends Phaser.Scene {
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private zKey!: Phaser.Input.Keyboard.Key;
   private xKey!: Phaser.Input.Keyboard.Key;
+  private rKey!: Phaser.Input.Keyboard.Key;
   private mapManager!: MapManager;
+  private objectManager!: ObjectManager;
   private isTransitioning = false;
   private portalHintContainer!: Phaser.GameObjects.Container;
   private vineSystem!: VineExtensionSystem;
@@ -44,6 +48,14 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48
     });
+    this.load.spritesheet('thunder', 'assets/gimmicks/thunder6.png', {
+      frameWidth: 256,
+      frameHeight: 384
+    });
+    this.load.spritesheet('ginseng_sunflower', 'assets/gimmicks/sunflower.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
     this.load.spritesheet('player', 'assets/characters/astronaut_walking.png', {
       frameWidth: 64,
       frameHeight: 64
@@ -60,7 +72,15 @@ export class GameScene extends Phaser.Scene {
     // 맵 로드/충돌 구성
     this.mapManager = new MapManager(this);
     this.mapManager.setCollisionMode('arcade');
-    this.mapManager.load('map:main').then(() => this.loadNPCsForMap('main'));
+    this.mapManager.load('map:main').then(async () => {
+      await this.loadNPCsForMap('main');
+      // Objects
+      const tilesKey = this.mapManager.getTilesTextureKey();
+      const tileSize = this.mapManager.getTileSize();
+      this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
+      await this.objectManager.load('main', tilesKey, tileSize);
+      this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
+    });
 
     // 우주인 애니메이션 등록
     this.anims.create({
@@ -113,6 +133,42 @@ export class GameScene extends Phaser.Scene {
     this.anims.create({
       key: 'ginseng-walk-up',
       frames: this.anims.generateFrameNumbers('ginseng', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    // 변신 번개 애니메이션 등록 (thunder 시트 사용)
+    if (!this.anims.exists('thunder-strike')) {
+      this.anims.create({
+        key: 'thunder-strike',
+        frames: this.anims.generateFrameNumbers('thunder', { start: 0, end: 5 }),
+        frameRate: 16,
+        repeat: 0
+      });
+    }
+
+    // 인삼이 해바라기 애니메이션 등록
+    this.anims.create({
+      key: 'ginseng-sunflower-down',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-left',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-right',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-up',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 12, end: 15 }),
       frameRate: 8,
       repeat: -1
     });
@@ -265,6 +321,8 @@ export class GameScene extends Phaser.Scene {
     this.zKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
     // X (충돌체 디버그 토글)
     this.xKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+    // R (인삼 ↔ 해바라기 변신)
+    this.rKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     
     // 스페이스 키 이벤트
     this.spaceKey.on('down', () => {
@@ -284,6 +342,11 @@ export class GameScene extends Phaser.Scene {
     // X: 충돌체 디버그 표시 토글
     this.xKey.on('down', () => {
       this.mapManager?.toggleCollisionDebug();
+    });
+
+    // R: 번개 + 변신 토글
+    this.rKey.on('down', () => {
+      this.onTransformToggle();
     });
     
     // ESC 키로 메인 메뉴로 돌아가기
@@ -359,6 +422,26 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private onTransformToggle(): void {
+    if (this.isTransitioning || this.dialogueManager.getState().isActive) return;
+    const p2 = this.player2?.sprite;
+    if (!p2) return;
+    this.triggerThunderAt(p2.x, p2.y);
+    this.time.delayedCall(350, () => {
+      this.player2?.toggleForm();
+    });
+  }
+
+  private triggerThunderAt(x: number, y: number): void {
+    const s = this.add.sprite(x, y, 'thunder', 0);
+    s.setOrigin(0.5, 1);
+    s.setDepth(1500);
+    s.play('thunder-strike');
+    s.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      s.destroy();
+    });
+  }
+
   private handleSpaceKeyPress(): void {
     const dialogueState = this.dialogueManager.getState();
 
@@ -416,6 +499,8 @@ export class GameScene extends Phaser.Scene {
 
         // 페이드 아웃 후 전환 수행
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, async () => {
+          // save object states for current map
+          this.objectManager?.saveState();
           this.mapManager.unload();
           const ok = await this.mapManager.load(nextKey);
           if (!ok) {
@@ -437,6 +522,14 @@ export class GameScene extends Phaser.Scene {
           // 새 맵 충돌체에 플레이어 재연결
           this.mapManager.attachPlayer(this.player.sprite);
           this.mapManager.attachPlayer(this.player2.sprite);
+
+          // reload objects for next map
+          const tilesKey2 = this.mapManager.getTilesTextureKey();
+          const tileSize2 = this.mapManager.getTileSize();
+          this.objectManager?.unload();
+          this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
+          await this.objectManager.load(nextMapId, tilesKey2, tileSize2);
+          this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
 
           this.cameras.main.startFollow(this.player.sprite);
 
@@ -631,6 +724,9 @@ export class GameScene extends Phaser.Scene {
     // 덩굴 시스템 업데이트
     const delta = this.game.loop.delta;
     this.vineSystem.update(delta);
+
+    // 오브젝트 업데이트
+    this.objectManager?.update(this.time.now, this.game.loop.delta);
 
     // 하트 UI 주기적 갱신 (약 4회/초)
     this.uiFrameTicker = (this.uiFrameTicker + 1) % 15;
