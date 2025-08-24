@@ -49,6 +49,9 @@ export class Player {
   // ★ 전환 감지 플래그: 정지→이동 순간을 한 프레임 동안만 true→false 넘어가게 추적
   private wasMoving = false;
 
+  // 물뿌리개 상태
+  private isWateringCanEquipped = false;
+
   // (선택) 짧은 탭에도 모션 보이게 쓰고 있다면 그대로 동작하도록 호환
   // private minWalkDuration = 100;
   // private walkStartAt = 0;
@@ -173,9 +176,15 @@ export class Player {
           }
         }
 
-        const key = this.scene.anims.exists('walk-' + this.lastDir)
-          ? 'walk-' + this.lastDir
-          : 'player-walk-' + this.lastDir;
+        // 물뿌리개 상태에 따른 애니메이션 키 선택
+        let key: string;
+        if (this.isWateringCanEquipped) {
+          key = 'player-watering-' + this.lastDir;
+        } else {
+          key = this.scene.anims.exists('walk-' + this.lastDir)
+            ? 'walk-' + this.lastDir
+            : 'player-walk-' + this.lastDir;
+        }
 
         this.sprite.anims.play(key, true);
         // 정지→이동 전환 프레임에서는 즉시 2번째 프레임로 스냅 (play 이후에!)
@@ -309,5 +318,18 @@ export class Player {
     console.log(`경험치: ${this.stats.experience}`);
     console.log(`레벨: ${this.stats.level}`);
     console.log(`위치: (${Math.round(this.sprite.x)}, ${Math.round(this.sprite.y)})`);
+  }
+
+  // 물뿌리개 관련 메서드들
+  public getLastDirection(): 'down' | 'left' | 'right' | 'up' {
+    return this.lastDir;
+  }
+
+  public setWateringCanEquipped(equipped: boolean): void {
+    this.isWateringCanEquipped = equipped;
+  }
+
+  public isWateringCanEquippedState(): boolean {
+    return this.isWateringCanEquipped;
   }
 }
