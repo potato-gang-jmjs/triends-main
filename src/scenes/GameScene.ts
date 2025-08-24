@@ -180,6 +180,7 @@ export class GameScene extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 12, end: 15 }),
       frameRate: 10,
       repeat: 0
+    });
 
     // 인삼이 해바라기 애니메이션 등록
     this.anims.create({

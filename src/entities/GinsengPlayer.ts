@@ -114,20 +114,15 @@ export class GinsengPlayer {
 
 
     // 애니메이션 완료 시: 공격 종료 + 쿨다운 해제 + idle 프레임 고정
-    const onComplete = (anim: Phaser.Animations.Animation) => {
-      if (anim.key !== keyOnce) return;
-      this.sprite.off(Phaser.Animations.Events.ANIMATION_COMPLETE, onComplete);
-
+    this.sprite.once(`animationcomplete-${keyOnce}`, () => {
       this.isAttackingSunflower = false;
       this.attackOnCooldown = false;
 
-      // idle 프레임으로 마무리
       const idle = SUNFLOWER_IDLE;
       this.sprite.anims.stop();
       this.sprite.setFrame(idle[this.lastDir]);
-    };
+    });
 
-    this.sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, onComplete);
   }
 
   // (선택) Player와 호환되는 최소 걷기 유지시간 변수를 쓰고 있다면 그대로 활용됨
@@ -396,6 +391,12 @@ export class GinsengPlayer {
   public setForm(newForm: 'ginseng' | 'sunflower' | 'vine'): void {
     if (this.form === newForm) return;
     this.form = newForm;
+
+    // 폼 전환 시: 진행 중이던 해바라기 공격 상태/리스너 강제 초기화
+    this.sprite.off(Phaser.Animations.Events.ANIMATION_UPDATE);
+    this.sprite.off(Phaser.Animations.Events.ANIMATION_COMPLETE);
+    this.isAttackingSunflower = false;
+    this.attackOnCooldown = false;
 
     const tex = newForm === 'ginseng' ? GINSENG_TEX :
                newForm === 'sunflower' ? SUNFLOWER_TEX : VINE_TEX;
