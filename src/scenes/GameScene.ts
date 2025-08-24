@@ -18,6 +18,7 @@ import { ActionProcessor } from '../systems/ActionProcessor';
 export class GameScene extends Phaser.Scene {
   private player!: Player;
   private player2!: GinsengPlayer;
+  private sunflowerLasers!: Phaser.Physics.Arcade.Group;
   private keysWASD!: Phaser.Types.Input.Keyboard.CursorKeys;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private npcManager!: NPCManager;
@@ -71,6 +72,10 @@ export class GameScene extends Phaser.Scene {
       frameHeight: 64
     });
     this.load.spritesheet('water_entity', 'assets/characters/astronaut_water.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet('sunflower_laser', 'assets/gimmicks/sunflower_laser.png', {
       frameWidth: 64,
       frameHeight: 64
     });
@@ -160,6 +165,32 @@ export class GameScene extends Phaser.Scene {
         repeat: 0
       });
     }
+
+    // 해바라기 공격 애니메이션 등록
+    this.anims.create({
+      key: 'ginseng-sunflower-down-once',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-left-once',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 4, end: 7 }),
+      frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-right-once',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 8, end: 11 }),
+      frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: 'ginseng-sunflower-up-once',
+      frames: this.anims.generateFrameNumbers('ginseng_sunflower', { start: 12, end: 15 }),
+      frameRate: 10,
+      repeat: 0
+    });
 
     // 인삼이 해바라기 애니메이션 등록
     this.anims.create({
@@ -257,6 +288,18 @@ export class GameScene extends Phaser.Scene {
 
     // Player2 생성
     this.player2 = new GinsengPlayer(this, GAME_WIDTH / 2 + 128, GAME_HEIGHT / 2);
+
+    // 레이저 그룹 생성
+    this.sunflowerLasers = this.physics.add.group({
+      classType: Phaser.Physics.Arcade.Sprite,
+      maxSize: 100,
+      runChildUpdate: false
+    });
+
+    // 해바라기 공격-발사 이벤트 연결 (GinsengPlayer.ts에서 emit)
+    this.player2.sprite.on('sunflower-shoot', (e: { x: number; y: number; dir: 'left'|'right'|'up'|'down' }) => {
+      this.spawnSunflowerLaser(e.x, e.y, e.dir);
+    });
 
     // 키 입력 설정은 setupInput()에서 일괄 처리
 
@@ -507,21 +550,101 @@ export class GameScene extends Phaser.Scene {
     if (this.isTransitioning || this.dialogueManager.getState().isActive) return;
     const p2 = this.player2?.sprite;
     if (!p2) return;
-    this.triggerThunderAt(p2.x, p2.y);
+
+    // R 누른 순간부터 이동 잠금
+    this.player2.lockMovement();
+
+    // 이번 토글 이후 형태가 무엇인지 미리 계산
+    const willBecomeSunflower = !this.player2.isSunflowerForm();
+
+    // 번개 이펙트: 복귀(해바라기→인삼) 시에만 끝날 때 잠금 해제
+    this.triggerThunderAt(p2.x, p2.y, () => {
+      if (!willBecomeSunflower) {
+        // 인삼으로 돌아오는 경우: 번개 애니메이션이 끝난 시점에만 해제
+        this.player2.unlockMovement();
+      }
+    });
+
+    // 형태 전환은 살짝 지연(기존 로직 유지)
     this.time.delayedCall(350, () => {
       this.player2?.toggleForm();
+      // 해바라기로 변신한 경우는 계속 잠금 유지 (다음 복귀 때까지)
     });
   }
 
-  private triggerThunderAt(x: number, y: number): void {
+  private triggerThunderAt(x: number, y: number, onComplete?: () => void): void {
+
     const s = this.add.sprite(x, y, 'thunder', 0);
     s.setOrigin(0.5, 1);
     s.setDepth(1500);
     s.play('thunder-strike');
+
     s.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
       s.destroy();
+      if (onComplete) onComplete();
     });
   }
+
+  private spawnSunflowerLaser(x: number, y: number, dir: 'left'|'right'|'up'|'down'): void {
+    const speed = 500;
+
+    // 방향별 스폰 오프셋(픽셀) — 필요시 조정
+    const OFFSET: Record<'left'|'right'|'up'|'down', {dx:number; dy:number}> = {
+      left:  { dx:  0,  dy: -32 },
+      right: { dx:  0,  dy: -32 },
+      up:    { dx:  0,  dy: -32 },
+      down:  { dx:  0,  dy: -32 }
+    };
+    const sx = x + OFFSET[dir].dx;
+    const sy = y + OFFSET[dir].dy;
+
+    // 풀에서 탄알 하나 가져오기
+    const laser = this.sunflowerLasers.get(sx, sy, 'sunflower_laser') as Phaser.Physics.Arcade.Sprite;
+
+    if (!laser) return;
+
+    laser.setActive(true).setVisible(true);
+    this.physics.world.enable(laser);
+
+    // 단일 프레임(세로 스트립): up=0, left=1, right=2, down=3
+    const FRAME_BY_DIR: Record<'left'|'right'|'up'|'down', number> = {
+      down: 0, left: 1, right: 2, up: 3
+    };
+    laser.setFrame(FRAME_BY_DIR[dir]);
+
+
+    // 물리/히트박스 — 64x64 시트지만 맞게 줄여서 판정
+    const body = laser.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+
+    // 히트박스(정방형 탄으로 가정): 필요시 조정
+    const HIT_W = 16;
+    const HIT_H = 16;
+    body.setSize(HIT_W, HIT_H);
+    body.setOffset((64 - HIT_W) / 2, (64 - HIT_H) / 2);
+
+    // 시각 중심
+    laser.setOrigin(0.5, 0.5);
+
+
+    // 방향/속도/각도 설정
+    if (dir === 'left')  { body.setVelocity(-speed, 0); }
+    else if (dir === 'right') { body.setVelocity(speed, 0); }
+    else if (dir === 'up')    { body.setVelocity(0, -speed); }
+    else                      { body.setVelocity(0,  speed); }
+
+    // 단일 프레임 방향 시트이므로 회전은 하지 않음
+    laser.setAngle(0);
+
+    laser.setDepth(1200);
+    laser.setOrigin(0.5, 0.5);
+
+    // 수명 타이머 (화면 밖 관리 전까지 임시 제거)
+    this.time.delayedCall(800, () => {
+      if (laser.active) laser.destroy();
+    });
+  }
+
 
   private handleSpaceKeyPress(): void {
     const dialogueState = this.dialogueManager.getState();
