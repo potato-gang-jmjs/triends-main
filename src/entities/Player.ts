@@ -52,6 +52,13 @@ export class Player {
   // 물뿌리개 상태
   private isWateringCanEquipped = false;
   private isWateringActive = false; // 실제 물 분사 중 여부
+  
+  // 거울 상태
+  private isMirrorEquipped = false;
+
+  // 0키 거울-드는 포즈가 현재 표시 중인지
+  private isMirroringPose = false;
+
 
   // (선택) 짧은 탭에도 모션 보이게 쓰고 있다면 그대로 동작하도록 호환
   // private minWalkDuration = 100;
@@ -177,17 +184,32 @@ export class Player {
           }
         }
 
-        // 물뿌리개 상태에 따른 애니메이션 키 선택
+        // 최우선: 0키로 트리거된 '거울 드는 포즈'가 켜져 있으면 어떤 상황이든 이 프레임만 보여준다.
+        if (this.isMirroringPose) {
+          const dirKey = this.lastDir; // 'down' | 'left' | 'right' | 'up'
+          // 포즈는 애니메이션이 아닌 'player_mirroring' 단일 프레임로 강제
+          const DIR_INDEX: Record<'down'|'left'|'right'|'up', number> = { down: 0, left: 1, right: 2, up: 3 };
+          if (this.scene.textures.exists('player_mirroring')) {
+            this.sprite.anims.stop();
+            this.sprite.setTexture('player_mirroring', DIR_INDEX[dirKey]);
+          }
+          return; // 다른 애니메이션 로직은 완전히 패스
+        }
+
+        // 그 다음 우선순위: 물뿌리기 > 거울 > 기본 걷기
         let key: string;
         if (this.isWateringCanEquipped) {
           key = (this.isWateringActive
             ? 'player-watering-active-'
             : 'player-watering-') + this.lastDir;
+        } else if (this.isMirrorEquipped) {
+          key = 'player-mirror-walk-' + this.lastDir;
         } else {
           key = this.scene.anims.exists('walk-' + this.lastDir)
             ? 'walk-' + this.lastDir
             : 'player-walk-' + this.lastDir;
         }
+
 
         this.sprite.anims.play(key, true);
         // 정지→이동 전환 프레임에서는 즉시 2번째 프레임로 스냅 (play 이후에!)
@@ -339,4 +361,41 @@ export class Player {
   public setWateringActive(active: boolean): void {
     this.isWateringActive = active;
   }
+
+  // 거울 관련 메서드
+  public setMirrorEquipped(equipped: boolean): void {
+    this.isMirrorEquipped = equipped;
+  }
+
+  public isMirrorEquippedState(): boolean {
+    return this.isMirrorEquipped;
+  }
+
+  /** 키패드0: 거울 드는 포즈 시작 (애니메이션 전면 대체) */
+  public startMirroringPose(durationMs = 200): void {
+    // 이미 포즈 중이면 타이머만 갱신(중첩 방지)
+    this.isMirroringPose = true;
+
+    // 현재 바라보는 방향 프레임을 즉시 적용
+    const DIR_INDEX: Record<'down'|'left'|'right'|'up', number> = { down: 0, left: 1, right: 2, up: 3 };
+    if (this.scene.textures.exists('player_mirroring')) {
+      this.sprite.anims.stop();
+      this.sprite.setTexture('player_mirroring', DIR_INDEX[this.lastDir]);
+    }
+
+    // duration 후 자동 복귀
+    this.scene.time.delayedCall(durationMs, () => {
+      this.isMirroringPose = false;
+      // 복귀 즉시 해당 방향 idle로 스냅(현재 장착 상태에 맞는 시트로)
+      this.haltMovementAndIdle();
+    });
+  }
+
+  /** 현재 포즈 강제 종료(필요 시 수동 복귀용) */
+  public stopMirroringPose(): void {
+    if (!this.isMirroringPose) return;
+    this.isMirroringPose = false;
+    this.haltMovementAndIdle();
+  }
+
 }
