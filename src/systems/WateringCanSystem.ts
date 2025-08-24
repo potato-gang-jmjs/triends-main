@@ -103,18 +103,18 @@ export class WateringCanSystem {
     
     switch (direction) {
       case 'down':
-        offsetY = 64; // 아래: y+64
+        offsetY = 64; // 아래: y+64 (기존 유지)
         break;
       case 'left':
-        offsetX = -20;
-        offsetY = 20 + playerHeight / 2; // 왼: x-20 y+20+playerHeight/2
+        offsetX = -20; // 기존 살짝 왼쪽
+        offsetY = 40; // 지시: 플레이어 height/2 만큼 위로
         break;
       case 'right':
-        offsetX = 20 + playerWidth; // player width만큼 더 오른쪽
-        offsetY = 20 + playerHeight / 2; // 오: x+20+playerWidth y+20+playerHeight/2
+        offsetX = 20; // 지시: width 만큼 왼쪽으로
+        offsetY = 40; // 지시: 플레이어 height/2 만큼 위로
         break;
       case 'up':
-        offsetY = -8; // 위: y-8
+        offsetY = -8; // 위: y-8 (기존 유지)
         break;
     }
 
@@ -136,11 +136,11 @@ export class WateringCanSystem {
     const playerDepth = player.depth;
     this.waterEntity.setDepth(playerDepth - 1);
     
-    // 위쪽을 보고 있을 때 상하반전
-    this.waterEntity.setFlipY(direction === 'up');
-    
-    // 애니메이션 안전하게 재생
-    if (this.scene.anims.exists('water-spray')) {
+    // 애니메이션 안전하게 재생(방향 별 행 사용, 회전 사용 안 함)
+    const animKey = `water-spray-${direction}`;
+    if (this.scene.anims.exists(animKey)) {
+      this.waterEntity.play(animKey);
+    } else if (this.scene.anims.exists('water-spray')) {
       this.waterEntity.play('water-spray');
     } else {
       console.warn('water-spray 애니메이션이 존재하지 않습니다.');
@@ -241,12 +241,15 @@ export class WateringCanSystem {
           console.log('물 타일에서 물을 다시 채웠습니다!');
         }
         this.state = 'equipped';
-        this.switchToWateringCanSprite();
+        this.player.setWateringCanEquipped(true);
+        this.player.setWateringActive(false);
         console.log('물뿌리개를 장착했습니다. Shift키를 다시 눌러 물뿌리기를 시작하세요.');
       } else if (this.state === 'equipped' && this.waterAmount > 0) {
         // equipped -> watering: 물뿌리기 시작
         this.state = 'watering';
         this.isWatering = true;
+        this.switchToWateringCanSprite();
+        this.player.setWateringActive(true);
         this.createWaterEntity();
         
         // 2P가 근처에 있으면 vine 능력 활성화
@@ -262,6 +265,7 @@ export class WateringCanSystem {
       if (!this.keyShift.isDown) {
         // Shift키를 떼면 물뿌리기 중지, equipped 상태로 복귀
         this.isWatering = false;
+        this.player.setWateringActive(false);
         this.destroyWaterEntity();
         this.deactivatePlayer2VineAbility();
         this.state = 'equipped';
@@ -281,8 +285,8 @@ export class WateringCanSystem {
       
       switch (direction) {
         case 'down': offsetY = 64; break;
-        case 'left': offsetX = -20; offsetY = 20 + playerHeight / 2; break; // 왼: x-20 y+20+playerHeight/2
-        case 'right': offsetX = 20 + playerWidth; offsetY = 20 + playerHeight / 2; break; // 오: x+20+playerWidth y+20+playerHeight/2
+        case 'left': offsetX = -20; offsetY = -playerHeight / 2; break; // 지시 적용
+        case 'right': offsetX = -playerWidth; offsetY = -playerHeight / 2; break; // 지시 적용
         case 'up': offsetY = -8; break;
       }
       
@@ -294,9 +298,13 @@ export class WateringCanSystem {
         );
       }
       
-      // 위쪽을 보고 있을 때 상하반전
-      if (typeof this.waterEntity.setFlipY === 'function') {
-        this.waterEntity.setFlipY(direction === 'up');
+      // 방향 변경 시 애니메이션도 해당 행으로 보장
+      const animKey = `water-spray-${direction}`;
+      if (typeof (this.waterEntity as any).anims !== 'undefined') {
+        const current = (this.waterEntity as any).anims?.getName?.();
+        if (current !== animKey && this.scene.anims.exists(animKey)) {
+          this.waterEntity!.play(animKey, true);
+        }
       }
     }
 
@@ -309,6 +317,7 @@ export class WateringCanSystem {
       } else {
         // 물이 다 떨어지면 자동으로 중지하고 idle 상태로
         this.isWatering = false;
+        this.player.setWateringActive(false);
         this.destroyWaterEntity();
         this.deactivatePlayer2VineAbility();
         this.state = 'idle';

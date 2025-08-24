@@ -67,7 +67,13 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64
     });
-    this.load.spritesheet('player_watering', 'assets/characters/astronaut_walking_water.png', {
+    // 장착 상태(물통 들고 걷기)
+    this.load.spritesheet('player_walking_water', 'assets/characters/astronaut_walking_water.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    // 실제 물 분사 중
+    this.load.spritesheet('player_watering', 'assets/characters/astronaut_watering.png', {
       frameWidth: 64,
       frameHeight: 64
     });
@@ -247,37 +253,62 @@ export class GameScene extends Phaser.Scene {
     // 물뿌리개 애니메이션 등록
     this.anims.create({
       key: 'player-watering-down',
-      frames: this.anims.generateFrameNumbers('player_watering', { start: 0, end: 3 }),
+      frames: this.anims.generateFrameNumbers('player_walking_water', { start: 0, end: 3 }),
       frameRate: 8,
       repeat: -1
     });
     this.anims.create({
       key: 'player-watering-left',
-      frames: this.anims.generateFrameNumbers('player_watering', { start: 4, end: 7 }),
+      frames: this.anims.generateFrameNumbers('player_walking_water', { start: 4, end: 7 }),
       frameRate: 8,
       repeat: -1
     });
     this.anims.create({
       key: 'player-watering-right',
-      frames: this.anims.generateFrameNumbers('player_watering', { start: 8, end: 11 }),
+      frames: this.anims.generateFrameNumbers('player_walking_water', { start: 8, end: 11 }),
       frameRate: 8,
       repeat: -1
     });
     this.anims.create({
       key: 'player-watering-up',
+      frames: this.anims.generateFrameNumbers('player_walking_water', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    // 물뿌리는 중(Active) 애니메이션 등록
+    this.anims.create({
+      key: 'player-watering-active-down',
+      frames: this.anims.generateFrameNumbers('player_watering', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-watering-active-left',
+      frames: this.anims.generateFrameNumbers('player_watering', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-watering-active-right',
+      frames: this.anims.generateFrameNumbers('player_watering', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-watering-active-up',
       frames: this.anims.generateFrameNumbers('player_watering', { start: 12, end: 15 }),
       frameRate: 8,
       repeat: -1
     });
 
-    // 물 스프레이 애니메이션 등록
+    // 물 스프레이 애니메이션 등록 (각 방향은 시트의 다른 행 사용)
     if (this.textures.exists('water_entity')) {
-      this.anims.create({
-        key: 'water-spray',
-        frames: this.anims.generateFrameNumbers('water_entity', { start: 0, end: 3 }),
-        frameRate: 12,
-        repeat: -1
-      });
+      this.anims.create({ key: 'water-spray', frames: this.anims.generateFrameNumbers('water_entity', { start: 0, end: 3 }), frameRate: 12, repeat: -1 });
+      this.anims.create({ key: 'water-spray-down',  frames: this.anims.generateFrameNumbers('water_entity', { start: 0,  end: 3  }), frameRate: 12, repeat: -1 });
+      this.anims.create({ key: 'water-spray-left',  frames: this.anims.generateFrameNumbers('water_entity', { start: 4,  end: 7  }), frameRate: 12, repeat: -1 });
+      this.anims.create({ key: 'water-spray-right', frames: this.anims.generateFrameNumbers('water_entity', { start: 8,  end: 11 }), frameRate: 12, repeat: -1 });
+      this.anims.create({ key: 'water-spray-up',    frames: this.anims.generateFrameNumbers('water_entity', { start: 12, end: 15 }), frameRate: 12, repeat: -1 });
     } else {
       console.warn('water_entity 텍스처가 로드되지 않아 물 스프레이 애니메이션을 등록할 수 없습니다.');
     }

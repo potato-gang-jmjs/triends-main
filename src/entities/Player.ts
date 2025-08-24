@@ -51,6 +51,7 @@ export class Player {
 
   // 물뿌리개 상태
   private isWateringCanEquipped = false;
+  private isWateringActive = false; // 실제 물 분사 중 여부
 
   // (선택) 짧은 탭에도 모션 보이게 쓰고 있다면 그대로 동작하도록 호환
   // private minWalkDuration = 100;
@@ -179,7 +180,9 @@ export class Player {
         // 물뿌리개 상태에 따른 애니메이션 키 선택
         let key: string;
         if (this.isWateringCanEquipped) {
-          key = 'player-watering-' + this.lastDir;
+          key = (this.isWateringActive
+            ? 'player-watering-active-'
+            : 'player-watering-') + this.lastDir;
         } else {
           key = this.scene.anims.exists('walk-' + this.lastDir)
             ? 'walk-' + this.lastDir
@@ -331,5 +334,9 @@ export class Player {
 
   public isWateringCanEquippedState(): boolean {
     return this.isWateringCanEquipped;
+  }
+
+  public setWateringActive(active: boolean): void {
+    this.isWateringActive = active;
   }
 }
