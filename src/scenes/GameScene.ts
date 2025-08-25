@@ -372,6 +372,10 @@ export class GameScene extends Phaser.Scene {
       this.spawnSunflowerLaser(e.x, e.y, e.dir);
     });
 
+    // P1 mirroring 중 레이저 분기
+    this.physics.add.overlap(this.player.sprite, this.sunflowerLasers,
+      this.handleLaserVsMirror as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback, undefined, this);
+
     // 키 입력 설정은 setupInput()에서 일괄 처리
 
     // NPC 매니저 생성
@@ -659,8 +663,13 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private spawnSunflowerLaser(x: number, y: number, dir: 'left'|'right'|'up'|'down'): void {
-    const speed = 500;
+  private spawnSunflowerLaser(
+    x: number,
+    y: number,
+    dir: 'left'|'right'|'up'|'down',
+    gen: number = 0            // ← 분기 세대(원탄=0, 분기탄=1)
+  ): Phaser.Physics.Arcade.Sprite | null {
+    const speed = 700;
 
     // 방향별 스폰 오프셋(픽셀) — 필요시 조정
     const OFFSET: Record<'left'|'right'|'up'|'down', {dx:number; dy:number}> = {
@@ -674,50 +683,157 @@ export class GameScene extends Phaser.Scene {
 
     // 풀에서 탄알 하나 가져오기
     const laser = this.sunflowerLasers.get(sx, sy, 'sunflower_laser') as Phaser.Physics.Arcade.Sprite;
-
-    if (!laser) return;
+    if (!laser) return null;
 
     laser.setActive(true).setVisible(true);
     this.physics.world.enable(laser);
 
-    // 단일 프레임(세로 스트립): up=0, left=1, right=2, down=3
+    // 단일 프레임(세로 스트립): down=0, left=1, right=2, up=3
     const FRAME_BY_DIR: Record<'left'|'right'|'up'|'down', number> = {
       down: 0, left: 1, right: 2, up: 3
     };
     laser.setFrame(FRAME_BY_DIR[dir]);
 
-
     // 물리/히트박스 — 64x64 시트지만 맞게 줄여서 판정
     const body = laser.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
 
-    // 히트박스(정방형 탄으로 가정): 필요시 조정
     const HIT_W = 16;
     const HIT_H = 16;
     body.setSize(HIT_W, HIT_H);
     body.setOffset((64 - HIT_W) / 2, (64 - HIT_H) / 2);
 
-    // 시각 중심
+    // 방향/속도
+    if (dir === 'left')      body.setVelocity(-speed, 0);
+    else if (dir === 'right')body.setVelocity(speed, 0);
+    else if (dir === 'up')   body.setVelocity(0, -speed);
+    else                     body.setVelocity(0,  speed);
+
+    // 메타데이터(분기/방향)
+    laser.setData('dir', dir);
+    laser.setData('gen', gen); // 0=원탄, 1=분기탄
+
+    // 시각
+    laser.setAngle(0);
+    laser.setDepth(1200);
     laser.setOrigin(0.5, 0.5);
 
+    // 수명
+    this.time.delayedCall(800, () => {
+      if (laser.active) laser.destroy();
+    });
 
-    // 방향/속도/각도 설정
-    if (dir === 'left')  { body.setVelocity(-speed, 0); }
-    else if (dir === 'right') { body.setVelocity(speed, 0); }
-    else if (dir === 'up')    { body.setVelocity(0, -speed); }
-    else                      { body.setVelocity(0,  speed); }
+    return laser;
+  }
 
-    // 단일 프레임 방향 시트이므로 회전은 하지 않음
-    laser.setAngle(0);
+  /** 분기탄 전용 생성: 오프셋 무시, 현재 좌표 그대로 사용 */
+  private spawnSplitLaser(
+    x: number,
+    y: number,
+    dir: 'left'|'right'|'up'|'down'
+  ): Phaser.Physics.Arcade.Sprite | null {
+    const speed = 700;
+
+    const laser = this.sunflowerLasers.get(x, y, 'sunflower_laser') as Phaser.Physics.Arcade.Sprite;
+    if (!laser) return null;
+
+    laser.setActive(true).setVisible(true);
+    this.physics.world.enable(laser);
+
+    const FRAME_BY_DIR: Record<'left'|'right'|'up'|'down', number> = {
+      down: 0, left: 1, right: 2, up: 3
+    };
+    laser.setFrame(FRAME_BY_DIR[dir]);
+
+    const body = laser.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    body.setSize(16, 16);
+    body.setOffset((64 - 16) / 2, (64 - 16) / 2);
+
+    if (dir === 'left') body.setVelocity(-speed, 0);
+    else if (dir === 'right') body.setVelocity(speed, 0);
+    else if (dir === 'up') body.setVelocity(0, -speed);
+    else body.setVelocity(0, speed);
+
+    laser.setData('dir', dir);
+    laser.setData('gen', 1); // 항상 분기탄
 
     laser.setDepth(1200);
     laser.setOrigin(0.5, 0.5);
 
-    // 수명 타이머 (화면 밖 관리 전까지 임시 제거)
     this.time.delayedCall(800, () => {
       if (laser.active) laser.destroy();
     });
+
+    return laser;
   }
+
+
+  /** 입력 방향의 정반대 반환 */
+  private oppositeDir(dir: 'left'|'right'|'up'|'down'): 'left'|'right'|'up'|'down' {
+    if (dir === 'left') return 'right';
+    if (dir === 'right') return 'left';
+    if (dir === 'up') return 'down';
+    return 'up';
+  }
+
+  /** 주어진 방향과 수직(±90°)인 두 방향 반환 */
+  private perpendicularDirs(dir: 'left'|'right'|'up'|'down'): ['left'|'right'|'up'|'down','left'|'right'|'up'|'down'] {
+    return (dir === 'left' || dir === 'right') ? ['up','down'] : ['left','right'];
+  }
+
+  /** ArcadePhysicsCallback — 레이저 ↔ 플레이어 겹침 시 분기 처리 */
+  private handleLaserVsMirror: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (obj1, obj2) => {
+    // 안전하게 Sprite로 변환
+    const asSprite = (o: any): Phaser.GameObjects.Sprite | null => {
+      if (!o) return null;
+      if (o instanceof Phaser.GameObjects.Sprite) return o;
+      if (o.gameObject instanceof Phaser.GameObjects.Sprite) return o.gameObject;
+      return null;
+    };
+
+    const s1 = asSprite(obj1);
+    const s2 = asSprite(obj2);
+    if (!s1 || !s2) return;
+
+    // 어느 쪽이 레이저인지 식별
+    const isLaser = (s: Phaser.GameObjects.Sprite) => s.texture?.key === 'sunflower_laser';
+    const laser = isLaser(s1) ? s1 : (isLaser(s2) ? s2 : null);
+    if (!laser || !laser.active) return;
+
+    // 🔒 “mirroring 포즈 중”일 때만 활성 — Player.ts의 포즈는 텍스처/애니 키로 확실히 구분됨
+    const curTexKey = this.player.sprite.texture?.key ?? '';
+    const curAnimKey = this.player.sprite.anims?.currentAnim?.key ?? '';
+    const isMirroringNow =
+      curTexKey === 'player_mirroring' || curAnimKey.startsWith('player-mirroring-');
+    if (!isMirroringNow) return;
+
+    // 무한 분기 방지: 분기탄(gen>=1)은 더 이상 분기하지 않음
+    const gen = (laser.getData('gen') as number) ?? 0;
+    if (gen >= 1) return;
+
+    // 레이저 진행 방향(데이터 우선, 없으면 속도 기반)
+    let ldir = (laser.getData('dir') as 'left'|'right'|'up'|'down' | undefined);
+    if (!ldir) {
+      const body = (laser as any).body as Phaser.Physics.Arcade.Body | undefined;
+      const vx = body?.velocity?.x ?? 0;
+      const vy = body?.velocity?.y ?? 0;
+      ldir = Math.abs(vx) >= Math.abs(vy) ? (vx >= 0 ? 'right' : 'left') : (vy >= 0 ? 'down' : 'up');
+    }
+
+    // “방향에 맞게”: 플레이어가 레이저 정면을 바라보고 있어야 함 (facing === opposite(laserDir))
+    const facing = this.player.getLastDirection();
+    if (facing !== this.oppositeDir(ldir!)) return;
+
+    // 원탄 제거 → ±90° 두 갈래 분기탄 생성(gen=1)
+    const lx = laser.x, ly = laser.y;
+    laser.destroy();
+
+    const [d1, d2] = this.perpendicularDirs(ldir!);
+    this.spawnSplitLaser(lx, ly, d1);
+    this.spawnSplitLaser(lx, ly, d2);
+  };
+
 
 
   private handleSpaceKeyPress(): void {
