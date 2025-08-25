@@ -67,7 +67,7 @@ export class MirrorSystem {
         private playMirroringPose(): void {
         // 플레이어 쪽에서 애니메이션을 전면 대체하는 포즈를 시작한다.
         // 기본 지속시간은 200ms (필요시 여기서 숫자만 조정)
-            this.player.startMirroringPose(200);
+            this.player.startMirroringPose(100);
         }
 
 
