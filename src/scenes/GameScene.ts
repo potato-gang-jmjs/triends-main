@@ -14,6 +14,8 @@ import { VineExtensionSystem } from '../systems/VineExtensionSystem';
 import { WateringCanSystem } from '../systems/WateringCanSystem';
 import { ObjectManager } from '../systems/ObjectManager';
 import { ActionProcessor } from '../systems/ActionProcessor';
+import { MirrorSystem } from '../systems/MirrorSystem';
+
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -34,6 +36,8 @@ export class GameScene extends Phaser.Scene {
   private portalHintContainer!: Phaser.GameObjects.Container;
   private vineSystem!: VineExtensionSystem;
   private wateringSystem!: WateringCanSystem;
+  private mirrorSystem!: MirrorSystem;
+
   
   // 하트 UI
   private heartsTextP1!: Phaser.GameObjects.Text;
@@ -81,6 +85,15 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64
     });
+    this.load.spritesheet('player_walking_mirror', 'assets/characters/astronaut_walking_mirror.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet('player_mirroring', 'assets/characters/astronaut_mirroring.png', {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+
     this.load.spritesheet('sunflower_laser', 'assets/gimmicks/sunflower_laser.png', {
       frameWidth: 64,
       frameHeight: 64
@@ -312,6 +325,33 @@ export class GameScene extends Phaser.Scene {
     } else {
       console.warn('water_entity 텍스처가 로드되지 않아 물 스프레이 애니메이션을 등록할 수 없습니다.');
     }
+
+    // 거울 들기 상태 걷기 (64x64, 4프레임)
+    this.anims.create({
+      key: 'player-mirror-walk-down',
+      frames: this.anims.generateFrameNumbers('player_walking_mirror', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-mirror-walk-left',
+      frames: this.anims.generateFrameNumbers('player_walking_mirror', { start: 4, end: 7 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-mirror-walk-right',
+      frames: this.anims.generateFrameNumbers('player_walking_mirror', { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'player-mirror-walk-up',
+      frames: this.anims.generateFrameNumbers('player_walking_mirror', { start: 12, end: 15 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
     
     // 플레이어 생성
     // Player1 생성
@@ -352,6 +392,9 @@ export class GameScene extends Phaser.Scene {
     // 물뿌리개 시스템 (P1 전용)
     this.wateringSystem = new WateringCanSystem(this, this.player, this.player2);
     
+    // 거울 시스템 생성 (P1 전용)
+    this.mirrorSystem = new MirrorSystem(this, this.player);
+
     // 대화 시스템 이벤트 연결
     this.setupDialogueEvents();
     
@@ -969,6 +1012,9 @@ export class GameScene extends Phaser.Scene {
 
     // 물뿌리개 시스템 업데이트
     this.wateringSystem.update(delta);
+
+    // 거울 시스템 업데이트
+    this.mirrorSystem.update(delta);
 
     // 오브젝트 업데이트
     this.objectManager?.update(this.time.now, this.game.loop.delta);

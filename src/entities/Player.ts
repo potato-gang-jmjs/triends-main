@@ -52,6 +52,13 @@ export class Player {
   // 물뿌리개 상태
   private isWateringCanEquipped = false;
   private isWateringActive = false; // 실제 물 분사 중 여부
+  
+  // 거울 상태
+  private isMirrorEquipped = false;
+
+  // 0키 거울-드는 포즈가 현재 표시 중인지
+  private isMirroringPose = false;
+
 
   // (선택) 짧은 탭에도 모션 보이게 쓰고 있다면 그대로 동작하도록 호환
   // private minWalkDuration = 100;
@@ -110,6 +117,26 @@ export class Player {
     if (anyJustDown(kUp))    this.dirDownAt.up    = now;
     if (anyJustDown(kDown))  this.dirDownAt.down  = now;
 
+    // ★ 방향키를 '누르는 순간'에 lastDir을 즉시 최신으로 갱신 (정지 중이어도 방향 유지)
+    {
+      const just = {
+        left:  anyJustDown(kLeft),
+        right: anyJustDown(kRight),
+        up:    anyJustDown(kUp),
+        down:  anyJustDown(kDown),
+      };
+      if (just.left || just.right || just.up || just.down) {
+        // dirDownAt 값이 가장 큰(=가장 최근에 눌린) 방향을 lastDir로
+        const dirs = ['left','right','up','down'] as const;
+        let best: typeof dirs[number] = 'down';
+        for (const d of dirs) {
+          if (this.dirDownAt[d] >= this.dirDownAt[best]) best = d;
+        }
+        this.lastDir = best;
+      }
+    }
+
+
     // 현재 눌림 상태(여기선 ‘왼/오/위/아래 중 하나 이상’이면 true)
     const pressedLeft  = anyDown(kLeft);
     const pressedRight = anyDown(kRight);
@@ -134,16 +161,27 @@ export class Player {
       velocityY *= PLAYER_DIAGONAL_SPEED / PLAYER_SPEED;
     }
 
-    // 속도 적용
-    this.sprite.setVelocity(
-      velocityX * PLAYER_SPEED,
-      velocityY * PLAYER_SPEED
-    );
+    // ★ 속도 적용: mirroring 포즈 중에는 강제 0
+    const speedX = this.isMirroringPose ? 0 : velocityX * PLAYER_SPEED;
+    const speedY = this.isMirroringPose ? 0 : velocityY * PLAYER_SPEED;
+    this.sprite.setVelocity(speedX, speedY);
 
     // ── 시각 처리: 우주복이면 방향 애니메이션, 아니면 기존 회전 유지 ──
     if (this.usingAstronaut) {
-      // ★ 이동 여부 캐싱(블록 내부 스코프)
-      const isMoving = (velocityX !== 0 || velocityY !== 0);
+        // 최우선: 0키로 트리거된 '거울 드는 포즈'가 켜져 있으면 어떤 상황이든 이 프레임만 보여준다.
+        if (this.isMirroringPose) {
+          const dirKey = this.lastDir; // 'down' | 'left' | 'right' | 'up'
+          // 포즈는 애니메이션이 아닌 'player_mirroring' 단일 프레임로 강제
+          const DIR_INDEX: Record<'down'|'left'|'right'|'up', number> = { down: 0, left: 1, right: 2, up: 3 };
+          if (this.scene.textures.exists('player_mirroring')) {
+            this.sprite.anims.stop();
+            this.sprite.setTexture('player_mirroring', DIR_INDEX[dirKey]);
+          }
+          return; // 다른 애니메이션 로직은 완전히 패스
+        }
+      // ★ 이동 여부 캐싱: mirroring 중에는 무조건 false
+      const isMoving = !this.isMirroringPose && (velocityX !== 0 || velocityY !== 0);
+
 
       if (!isMoving) {
         // (선택) 최소 걷기 유지시간 정책을 쓰고 있다면 그 이후에만 idle 전환
@@ -177,17 +215,20 @@ export class Player {
           }
         }
 
-        // 물뿌리개 상태에 따른 애니메이션 키 선택
+        // 그 다음 우선순위: 물뿌리기 > 거울 > 기본 걷기
         let key: string;
         if (this.isWateringCanEquipped) {
           key = (this.isWateringActive
             ? 'player-watering-active-'
             : 'player-watering-') + this.lastDir;
+        } else if (this.isMirrorEquipped) {
+          key = 'player-mirror-walk-' + this.lastDir;
         } else {
           key = this.scene.anims.exists('walk-' + this.lastDir)
             ? 'walk-' + this.lastDir
             : 'player-walk-' + this.lastDir;
         }
+
 
         this.sprite.anims.play(key, true);
         // 정지→이동 전환 프레임에서는 즉시 2번째 프레임로 스냅 (play 이후에!)
@@ -227,8 +268,33 @@ export class Player {
     // idle 프레임 설정(우주인 시트 기준 lastDir 유지)
     if (this.usingAstronaut) {
       this.sprite.anims.stop();
-      this.sprite.setFrame(ASTRONAUT_IDLE[this.lastDir]);
+
+      if (this.isMirrorEquipped) {
+        // ★ 미러 장착 중이면 'astronaut_walking_mirror'의 해당 방향 "걷기 첫 프레임"으로 스냅
+        const mirrorWalkKey = 'player-mirror-walk-' + this.lastDir;
+        const anim = this.scene.anims.get(mirrorWalkKey);
+        if (anim && anim.frames.length > 0) {
+          const firstFrame = anim?.frames?.[0];
+          if (firstFrame) {
+            this.sprite.anims.setCurrentFrame(firstFrame);
+            this.sprite.anims.pause();
+          } else {
+            this.sprite.setTexture(ASTRONAUT_TEX);
+            this.sprite.setFrame(ASTRONAUT_IDLE[this.lastDir]);
+          }
+          this.sprite.anims.pause();
+        } else {
+          // 폴백: 기본 시트 idle 첫 프레임
+          this.sprite.setTexture(ASTRONAUT_TEX);
+          this.sprite.setFrame(ASTRONAUT_IDLE[this.lastDir]);
+        }
+      } else {
+        // 기존: 기본 시트 idle 첫 프레임
+        this.sprite.setTexture(ASTRONAUT_TEX);
+        this.sprite.setFrame(ASTRONAUT_IDLE[this.lastDir]);
+      }
     }
+
     this.wasMoving = false;
   }
 
@@ -339,4 +405,71 @@ export class Player {
   public setWateringActive(active: boolean): void {
     this.isWateringActive = active;
   }
+
+  // 거울 관련 메서드
+  public setMirrorEquipped(equipped: boolean): void {
+    this.isMirrorEquipped = equipped;
+  }
+
+  public isMirrorEquippedState(): boolean {
+    return this.isMirrorEquipped;
+  }
+
+  /** 키패드0: 거울 드는 포즈 시작 (애니메이션 전면 대체) */
+  public startMirroringPose(durationMs = 200): void {
+    // 이미 포즈 중이면 타이머만 갱신(중첩 방지)
+    this.isMirroringPose = true;
+
+    // ★ 시작하는 순간 즉시 정지: 이전 프레임의 관성/미끄러짐 제거
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.stop();
+    this.sprite.setVelocity(0, 0);
+
+    // 현재 바라보는 방향 프레임을 즉시 적용
+    const DIR_INDEX: Record<'down'|'left'|'right'|'up', number> = { down: 0, left: 1, right: 2, up: 3 };
+    if (this.scene.textures.exists('player_mirroring')) {
+      this.sprite.anims.stop();
+      this.sprite.setTexture('player_mirroring', DIR_INDEX[this.lastDir]);
+    }
+
+    // duration 후 자동 복귀
+    this.scene.time.delayedCall(durationMs, () => {
+    this.isMirroringPose = false;
+
+    // ★ 거울 포즈 종료 직후: 'astronaut_walking_mirror' 시트의 해당 방향 "걷기 첫 프레임"으로 스냅
+    this.sprite.anims.stop();
+
+    const mirrorWalkKey = 'player-mirror-walk-' + this.lastDir;
+    const anim = this.scene.anims.get(mirrorWalkKey);
+
+    if (anim && anim.frames.length > 0) {
+      // 애니메이션의 0번 프레임 객체를 그대로 세팅 → 텍스처/프레임 인덱스 추측 불필요
+      const firstFrame = anim?.frames?.[0];
+      if (firstFrame) {
+        this.sprite.anims.setCurrentFrame(firstFrame);
+        this.sprite.anims.pause();
+      } else {
+        this.sprite.setTexture(ASTRONAUT_TEX);
+        this.sprite.setFrame(ASTRONAUT_IDLE[this.lastDir]);
+      }
+      this.sprite.anims.pause(); // 첫 프레임에 멈춘 상태 유지
+    } else {
+      // (안전한 폴백) 미러 걷기 애니가 없다면 기본 시트의 idle 첫 프레임로
+      this.sprite.setTexture(ASTRONAUT_TEX);
+      this.sprite.setFrame(ASTRONAUT_IDLE[this.lastDir]);
+    }
+
+    // 다음 틱에 이동 중이면 update가 알아서 walk로 전환
+    this.wasMoving = (this.sprite.body as Phaser.Physics.Arcade.Body).velocity.lengthSq() > 0;
+
+    });
+  }
+
+  /** 현재 포즈 강제 종료(필요 시 수동 복귀용) */
+  public stopMirroringPose(): void {
+    if (!this.isMirroringPose) return;
+    this.isMirroringPose = false;
+    this.haltMovementAndIdle();
+  }
+
 }
