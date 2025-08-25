@@ -37,8 +37,9 @@ export class GameScene extends Phaser.Scene {
   private vineSystem!: VineExtensionSystem;
   private wateringSystem!: WateringCanSystem;
   private mirrorSystem!: MirrorSystem;
+  private playerInvulUntil = 0; 
+  private playerFlickerTween?: Phaser.Tweens.Tween; 
 
-  
   // 하트 UI
   private heartsTextP1!: Phaser.GameObjects.Text;
   private heartsTextP2!: Phaser.GameObjects.Text;
@@ -782,6 +783,35 @@ export class GameScene extends Phaser.Scene {
     return (dir === 'left' || dir === 'right') ? ['up','down'] : ['left','right'];
   }
 
+  /** 점멸(피격 무적) 시작: durationMs 동안 알파를 빠르게 깜빡이기 */
+  private startPlayerFlicker(durationMs: number): void {
+    // 기존 트윈 정리
+    this.playerFlickerTween?.stop();
+    this.player.sprite.setAlpha(1);
+
+    // 짧게 깜빡이는 트윈 등록
+    this.playerFlickerTween = this.tweens.add({
+      targets: this.player.sprite,
+      alpha: { from: 1, to: 0.2 },
+      duration: 80,
+      yoyo: true,
+      repeat: Math.ceil(durationMs / 80) * 2, // 충분히 커버되도록
+    });
+
+    // duration 후 강제 종료(알파 원복)
+    this.time.delayedCall(durationMs, () => this.stopPlayerFlicker());
+  }
+
+  /** 점멸 종료(알파/트윈 원복) */
+  private stopPlayerFlicker(): void {
+    if (this.playerFlickerTween) {
+      this.playerFlickerTween.stop();
+      this.playerFlickerTween = undefined;
+    }
+    this.player.sprite.setAlpha(1);
+  }
+
+
   /** ArcadePhysicsCallback — 레이저 ↔ 플레이어 겹침 시 분기 처리 */
   private handleLaserVsMirror: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (obj1, obj2) => {
     // 안전하게 Sprite로 변환
@@ -806,7 +836,26 @@ export class GameScene extends Phaser.Scene {
     const curAnimKey = this.player.sprite.anims?.currentAnim?.key ?? '';
     const isMirroringNow =
       curTexKey === 'player_mirroring' || curAnimKey.startsWith('player-mirroring-');
-    if (!isMirroringNow) return;
+    if (!isMirroringNow) {
+      // 🔹 미러링 중이 아니면: 플레이어 피격 + 탄 제거 + (무적 중이면 데미지 생략)
+      // 탄은 항상 소거
+      if (laser.active) laser.destroy();
+
+      // 무적 중이면 데미지/점멸 스킵
+      if (this.time.now < this.playerInvulUntil) return;
+
+      // 데미지 적용 (체력 -1) — 필요 시 수치 변경 가능
+      this.player.addStat('hearts_p1', -1);
+
+      // 무적 시간 1000ms (원하면 조정 가능)
+      const INVUL_MS = 1000;
+      this.playerInvulUntil = this.time.now + INVUL_MS;
+
+      // 점멸 시작
+      this.startPlayerFlicker(INVUL_MS);
+
+      return; // 이 케이스에서는 분기(90° 갈래) 없음
+    }
 
     // 무한 분기 방지: 분기탄(gen>=1)은 더 이상 분기하지 않음
     const gen = (laser.getData('gen') as number) ?? 0;
