@@ -98,8 +98,6 @@ export class WateringCanSystem {
     let offsetY = 0;
     
     // 플레이어 width, height 가져오기 (기본 32픽셀)
-    const playerWidth = (player.body as Phaser.Physics.Arcade.Body)?.width || 32;
-    const playerHeight = (player.body as Phaser.Physics.Arcade.Body)?.height || 32;
     
     switch (direction) {
       case 'down':
