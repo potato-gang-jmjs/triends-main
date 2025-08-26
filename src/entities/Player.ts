@@ -424,6 +424,7 @@ export class Player {
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
     body.stop();
     this.sprite.setVelocity(0, 0);
+    
 
     // 현재 바라보는 방향 프레임을 즉시 적용
     const DIR_INDEX: Record<'down'|'left'|'right'|'up', number> = { down: 0, left: 1, right: 2, up: 3 };
