@@ -924,10 +924,18 @@ export class GameScene extends Phaser.Scene {
     const portal = this.portalRequiresBothPlayers 
       ? portalManager.findPortalIfBothInside(p1, p2, tileSize)
       : portalManager.findPortalIfAnyInside(p1, p2, tileSize);
-      
-    if (!portal) return false;
-    this.performPortalTransition(portal);
-    return true;
+    
+    // 디버그: 포털 상호작용 시도 시 정보 출력  
+    if (portal) {
+      console.log('포털 발견:', portal);
+      console.log('P1 위치:', Math.floor(p1.x / tileSize), Math.floor(p1.y / tileSize));
+      console.log('P2 위치:', Math.floor(p2.x / tileSize), Math.floor(p2.y / tileSize));
+      this.performPortalTransition(portal);
+      return true;
+    } else {
+      console.log('포털 없음. P1:', Math.floor(p1.x / tileSize), Math.floor(p1.y / tileSize), 'P2:', Math.floor(p2.x / tileSize), Math.floor(p2.y / tileSize));
+      return false;
+    }
   }
 
   private performPortalTransition(portal: any): void {
