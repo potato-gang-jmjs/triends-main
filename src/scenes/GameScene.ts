@@ -38,7 +38,8 @@ export class GameScene extends Phaser.Scene {
   private wateringSystem!: WateringCanSystem;
   private mirrorSystem!: MirrorSystem;
   private playerInvulUntil = 0; 
-  private playerFlickerTween?: Phaser.Tweens.Tween; 
+  private playerFlickerTween?: Phaser.Tweens.Tween;
+  private portalRequiresBothPlayers = false; 
 
   // 하트 UI
   private heartsTextP1!: Phaser.GameObjects.Text;
@@ -620,8 +621,8 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.input.keyboard!.on('keydown-F9', () => {
-      GlobalVariableManager.getInstance().set('story_progress', 'chapter2');
-      console.log('스토리 진행도 설정: chapter2');
+      this.portalRequiresBothPlayers = !this.portalRequiresBothPlayers;
+      console.log(`포털 모드 변경: ${this.portalRequiresBothPlayers ? '두 플레이어 모두 필요' : '한 플레이어만 필요'}`);
     });
   }
 
@@ -918,7 +919,12 @@ export class GameScene extends Phaser.Scene {
     const tileSize = this.mapManager.getTileSize();
     const p1 = new Phaser.Math.Vector2(this.player.sprite.x, this.player.sprite.y);
     const p2 = new Phaser.Math.Vector2(this.player2.sprite.x, this.player2.sprite.y);
-    const portal = portalManager.findPortalIfBothInside(p1, p2, tileSize);
+    
+    // 포털 모드에 따라 다른 함수 사용
+    const portal = this.portalRequiresBothPlayers 
+      ? portalManager.findPortalIfBothInside(p1, p2, tileSize)
+      : portalManager.findPortalIfAnyInside(p1, p2, tileSize);
+      
     if (!portal) return false;
     this.performPortalTransition(portal);
     return true;
@@ -1017,7 +1023,12 @@ export class GameScene extends Phaser.Scene {
     const tileSize = this.mapManager.getTileSize();
     const p1 = new Phaser.Math.Vector2(this.player.sprite.x, this.player.sprite.y);
     const p2 = new Phaser.Math.Vector2(this.player2.sprite.x, this.player2.sprite.y);
-    const portal = portalManager.findPortalIfBothInside(p1, p2, tileSize);
+    
+    // 포털 모드에 따라 다른 함수 사용
+    const portal = this.portalRequiresBothPlayers 
+      ? portalManager.findPortalIfBothInside(p1, p2, tileSize)
+      : portalManager.findPortalIfAnyInside(p1, p2, tileSize);
+      
     this.portalHintContainer?.setVisible(!!portal);
   }
 
