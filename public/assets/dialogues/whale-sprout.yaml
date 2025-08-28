@@ -1,0 +1,86 @@
+npc_id: "whale_sprout"
+conversations:
+  introduction:
+    text: "..."
+    condition: "flags.water_restored == false"
+    choices:
+      - text: "안녕하세요?"
+        next: "no_response"
+        action: null
+      - text: "일어나세요"
+        next: "no_response"
+        action: null
+
+  no_response:
+    text: "...(아무런 반응이 없다. 완전히 말라비틀어져 있다.)"
+    choices:
+      - text: "(만져본다)"
+        next: "dried_state"
+        action: null
+      - text: "(그냥 둔다)"
+        next: null
+        action: null
+
+  dried_state:
+    text: "...(딱딱하게 굳어있다. 생명의 기운을 전혀 느낄 수 없다.)"
+    choices:
+      - text: "(물을 구해와야겠다)"
+        next: null
+        action: null
+
+  awakening:
+    text: "뿌우우우~♪ (기쁜 울음소리와 함께 서서히 일어난다)"
+    condition: "flags.water_restored == true && flags.whale_revived == false"
+    choices:
+      - text: "일어났다!"
+        next: "revival_sequence"
+        action: "set_flag:whale_revived:true"
+
+  revival_sequence:
+    text: "뿌우우우우우~! (더욱 큰 소리로 울며 물을 힘차게 뿜어올린다. 마을 곳곳에 물이 다시 흐르기 시작한다!)"
+    choices:
+      - text: "정말 대단해!"
+        next: "gratitude"
+        action: null
+
+  gratitude:
+    text: "뿌우~ (고개를 숙여 감사의 인사를 한다. 따뜻한 눈빛으로 바라본다)"
+    choices:
+      - text: "천만에요"
+        next: "final_blessing"
+        action: null
+      - text: "(머리를 쓰다듬는다)"
+        next: "final_blessing"
+        action: null
+
+  final_blessing:
+    text: "뿌우우~ (마지막으로 한 번 더 울며 축복의 의미로 작은 물방울들을 뿌린다)"
+    choices:
+      - text: "고마워요"
+        next: null
+        action: null
+
+  active_state:
+    text: "뿌우~ (건강하게 물을 뿜으며 인사한다)"
+    condition: "flags.whale_revived == true"
+    choices:
+      - text: "안녕!"
+        next: "friendly_response"
+        action: null
+      - text: "(물을 마신다)"
+        next: "drink_water"
+        action: null
+
+  friendly_response:
+    text: "뿌우우~ (친근하게 대답한다)"
+    choices:
+      - text: "잘 지내"
+        next: null
+        action: null
+
+  drink_water:
+    text: "뿌우~ (신선한 물을 더 뿜어준다)"
+    choices:
+      - text: "맛있다!"
+        next: null
+        action: "add_stat:hearts_p1:1;add_stat:hearts_p2:1"
