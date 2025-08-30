@@ -21,6 +21,7 @@ export class DialogueManager {
   private actionProcessor: ActionProcessor;
   private conditionEvaluator: ConditionEvaluator;
   private state: DialogueState;
+  private flags: Record<string, boolean> = {};
 
   // 이벤트
   public onDialogueStart?: (npc: NPC, dialogue: DialogueData) => void;
@@ -41,6 +42,28 @@ export class DialogueManager {
       isWaitingForChoice: false,
       isTyping: false
     };
+  }
+
+  // flag: 헬퍼 — key를 string으로 보장하여 TS2538 방지
+  private setFlagFromAction(action?: string): void {
+    if (!action || !action.startsWith('flag:')) return;
+
+    const parts = action.split(':');
+    const key: string = String(parts[1] ?? '');   // ← string 강제
+    const raw: string = String(parts[2] ?? 'true');
+    if (!key) return;
+
+    const val = raw === 'true';
+    this.flags[key] = val;
+
+    // (선택) 세이브에도 반영
+    const npcId = this.state.currentNPC?.npcId;
+    if (npcId) {
+      const save = SaveManager.loadGame().dialogues[npcId] || { completedDialogues: [], variables: {} };
+      save.variables = save.variables || {};
+      (save.variables as Record<string, boolean>)[key] = val;
+      SaveManager.updateDialogueState(npcId, save);
+    }
   }
 
   // 대화 시작
@@ -153,11 +176,23 @@ export class DialogueManager {
     if (choice.action) {
       this.actionProcessor.processAction(choice.action);
     }
+    this.setFlagFromAction(choice.action);
 
     // 다음 대화로 이동
     if (choice.next) {
       this.moveToConversation(choice.next);
     } else {
+      // 두 주제를 모두 들었고, 아직 덕담을 안 보여줬다면 1회 우회
+      if (
+        this.state.currentNPC?.dialogueId === 'alien_001' &&
+        this.flags['alien1_power'] === true &&
+        this.flags['alien1_state'] === true &&
+        this.flags['alien1_after_both_shown'] !== true
+      ) {
+        this.flags['alien1_after_both_shown'] = true;
+        this.moveToConversation('after_both'); // alien_001.yaml에 존재
+        return; // 여기서 바로 종료하지 말고 덕담 먼저
+      }
       this.endDialogue();
     }
   }
@@ -195,6 +230,7 @@ export class DialogueManager {
     if (conversation.action) {
       this.actionProcessor.processAction(conversation.action);
     }
+    this.setFlagFromAction(conversation.action);
 
     // 선택지 준비
     const availableChoices = this.getAvailableChoices(conversation.choices || []);

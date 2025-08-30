@@ -1,18 +1,30 @@
 npc_id: "시무린2"
 conversations:
   introduction:
-    text: "사운드가 퍼져—들려? 바람결의 위상 차이를 맞추면 문이 열려."
+    text: "여긴 윗마을로 가는 길이야."
     choices:
-      - text: "위상 차이?"
-        next: "phase"
-        action: null
-      - text: "나중에 이야기하자."
-        next: null
+      - text: "(계속)"
+        next: "upper_village_water_1"
         action: null
 
-  phase:
-    text: "동시에 울리는 종 두 개. 왼쪽이 조금 빨라. 그 간격을 기억해."
+  # ── [윗마을 물 사정 안내] ─────────────────────────────
+  upper_village_water_1:
+    text: "윗마을은 지금 물이 말라버렸어."
     choices:
-      - text: "메모해둘게."
+      - text: "(계속)"
+        next: "upper_village_water_2"
+        action: null
+
+  upper_village_water_2:
+    text: "주민들은 제대로 움직이지도 못하고, 세계수도 물 공급을 못 받는 상황이야."
+    choices:
+      - text: "(계속)"
+        next: "upper_village_water_3"
+        action: null
+
+  upper_village_water_3:
+    text: "어떤 위협이 기다릴지 몰라. 하지만 너희라면 할 수 있을거야. 힘내!!"
+    choices:
+      - text: "끝내기"
         next: null
         action: null
