@@ -22,6 +22,7 @@ export class DialogueManager {
   private conditionEvaluator: ConditionEvaluator;
   private state: DialogueState;
   private flags: Record<string, boolean> = {};
+  private scene!: Phaser.Scene;
 
   // 이벤트
   public onDialogueStart?: (npc: NPC, dialogue: DialogueData) => void;
@@ -42,6 +43,7 @@ export class DialogueManager {
       isWaitingForChoice: false,
       isTyping: false
     };
+    this.scene = _scene;
   }
 
   // flag: 헬퍼 — key를 string으로 보장하여 TS2538 방지
@@ -174,7 +176,9 @@ export class DialogueManager {
 
     // 액션 실행
     if (choice.action) {
-      this.actionProcessor.processAction(choice.action);
+      if (!this.tryHandleMapTravelAction(choice.action)) {
+        this.actionProcessor.processAction(choice.action);
+      }
     }
     this.setFlagFromAction(choice.action);
 
@@ -228,7 +232,9 @@ export class DialogueManager {
 
     // 액션이 있으면 실행
     if (conversation.action) {
-      this.actionProcessor.processAction(conversation.action);
+      if (!this.tryHandleMapTravelAction(conversation.action)) {
+        this.actionProcessor.processAction(conversation.action);
+      }
     }
     this.setFlagFromAction(conversation.action);
 
@@ -311,5 +317,27 @@ export class DialogueManager {
     currentState.lastInteractionTime = Date.now();
 
     SaveManager.updateDialogueState(npcId, currentState);
+  }
+
+  // 특수 액션: 맵 전환 (map_travel:mapId:tileX:tileY[:fadeMs]) — 씬 이벤트로 위임
+  private tryHandleMapTravelAction(action: string): boolean {
+    if (!action || !action.startsWith('map_travel:')) return false;
+    const parts = action.split(':');
+    if (parts.length < 4) {
+      console.error('map_travel 액션 형식 오류:', action);
+      return true;
+    }
+    const mapId = parts[1];
+    const tileX = Number(parts[2]);
+    const tileY = Number(parts[3]);
+    const fadeMs = parts[4] ? Number(parts[4]) : undefined;
+    if (!mapId || Number.isNaN(tileX) || Number.isNaN(tileY)) {
+      console.error('map_travel 파라미터 오류:', { mapId, tileX, tileY, fadeMs });
+      return true;
+    }
+    this.scene.events.emit('map_travel', { mapId, spawn: { x: tileX, y: tileY }, fadeMs });
+    // 전환 직전 대화 종료
+    this.endDialogue();
+    return true;
   }
 } 

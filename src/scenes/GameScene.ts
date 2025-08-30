@@ -552,6 +552,13 @@ export class GameScene extends Phaser.Scene {
         this.dialogueManager.completeTyping();
       }
     };
+
+    // === 대화 기반 맵 전환(map_travel) 이벤트 ===
+    this.events.on('map_travel', (payload: { mapId: string; spawn: { x: number; y: number }; fadeMs?: number }) => {
+      const { mapId, spawn, fadeMs } = payload || ({} as any);
+      if (!mapId || !spawn) return;
+      this.performDirectMapTransition(mapId, spawn, fadeMs);
+    });
   }
 
   private async loadNPCsForMap(mapId: string): Promise<void> {
@@ -1061,6 +1068,69 @@ export class GameScene extends Phaser.Scene {
           this.mapManager.attachPlayer(this.player2.sprite);
 
           // reload objects for next map
+          const tilesKey2 = this.mapManager.getTilesTextureKey();
+          const tileSize2 = this.mapManager.getTileSize();
+          this.objectManager?.unload();
+          this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
+          await this.objectManager.load(nextMapId, tilesKey2, tileSize2);
+          this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
+
+          this.cameras.main.startFollow(this.player.sprite);
+
+          this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => {
+            this.input.keyboard && (this.input.keyboard.enabled = true);
+            this.isTransitioning = false;
+          });
+          this.cameras.main.fadeIn(fadeMs, 0, 0, 0);
+        });
+        this.cameras.main.fadeOut(fadeMs, 0, 0, 0);
+      })
+      .catch((err) => {
+        console.error('다음 맵 프리페치 실패, 전환 취소:', err);
+        this.input.keyboard && (this.input.keyboard.enabled = true);
+        this.isTransitioning = false;
+      });
+  }
+
+  private performDirectMapTransition(nextMapId: string, spawnTile: { x: number; y: number }, fadeMs: number = 300): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+
+    // 입력 잠금 및 플레이어 정지
+    this.haltPlayersAndResetKeys();
+    this.input.keyboard?.enabled && (this.input.keyboard.enabled = false);
+
+    // 사전 프리페치
+    const nextKey = 'map:' + nextMapId;
+    fetch(`assets/maps/${nextMapId}/map.json`, { cache: 'no-cache' })
+      .then((pre) => {
+        if (!pre.ok) throw new Error('map.json not found');
+
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, async () => {
+          // 현재 맵 상태 저장/언로드
+          this.objectManager?.saveState();
+          this.mapManager.unload();
+          const ok = await this.mapManager.load(nextKey);
+          if (!ok) {
+            console.error('맵 로드 실패, 전환 취소');
+            this.cameras.main.fadeIn(fadeMs, 0, 0, 0);
+            this.input.keyboard && (this.input.keyboard.enabled = true);
+            this.isTransitioning = false;
+            return;
+          }
+
+          // 스폰 배치 (타일좌표 → 픽셀중심)
+          const tileSize = this.mapManager.getTileSize();
+          const spawnX = spawnTile.x * tileSize + tileSize / 2;
+          const spawnY = spawnTile.y * tileSize + tileSize / 2;
+          this.player.sprite.setPosition(spawnX, spawnY);
+          this.player2.sprite.setPosition(spawnX + tileSize * 2, spawnY);
+
+          // 새 맵의 NPC/오브젝트 재로딩
+          await this.loadNPCsForMap(nextMapId);
+          this.mapManager.attachPlayer(this.player.sprite);
+          this.mapManager.attachPlayer(this.player2.sprite);
+
           const tilesKey2 = this.mapManager.getTilesTextureKey();
           const tileSize2 = this.mapManager.getTileSize();
           this.objectManager?.unload();

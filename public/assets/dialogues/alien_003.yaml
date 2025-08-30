@@ -25,6 +25,9 @@ conversations:
   upper_village_light_3:
     text: "어떤 위협이 기다릴지 몰라. 하지만 너희라면 할 수 있을거야. 힘내!!"
     choices:
+      - text: "아랫마을로 이동한다"
+        next: null
+        action: "map_travel:forest:3:7:400"
       - text: "끝내기"
         next: null
         action: null
