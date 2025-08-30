@@ -13,7 +13,6 @@ export class MapCollisionManager {
   private debugVisible = false;
   private pendingPlayers: Phaser.Physics.Arcade.Sprite[] = [];
   private tilesTextureKey: string = 'tiles';
-  private frameOpaqueBoundsCache: Map<string, { left: number; top: number; right: number; bottom: number } | null> = new Map();
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -50,56 +49,6 @@ export class MapCollisionManager {
     return !rule.requires.every(flag => !!gvm.get(flag));
   }
 
-  private getOpaqueBoundsForFrame(frameIndex: number): { left: number; top: number; right: number; bottom: number } | null {
-    const cacheKey = `${this.tilesTextureKey}:${frameIndex}:${this.tileSize}`;
-    if (this.frameOpaqueBoundsCache.has(cacheKey)) {
-      return this.frameOpaqueBoundsCache.get(cacheKey)!;
-    }
-
-    const texture = this.scene.textures.get(this.tilesTextureKey);
-    if (!texture) {
-      this.frameOpaqueBoundsCache.set(cacheKey, null);
-      return null;
-    }
-    const frame = texture.get(frameIndex);
-    if (!frame) {
-      this.frameOpaqueBoundsCache.set(cacheKey, null);
-      return null;
-    }
-
-    const startX = Math.floor(frame.cutX);
-    const startY = Math.floor(frame.cutY);
-    const width = Math.floor(frame.cutWidth);
-    const height = Math.floor(frame.cutHeight);
-
-    let left = width;
-    let top = height;
-    let right = -1;
-    let bottom = -1;
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const alpha = this.scene.textures.getPixelAlpha(startX + x, startY + y, texture.key) as number;
-        if (alpha && alpha > 0) {
-          if (x < left) left = x;
-          if (y < top) top = y;
-          if (x > right) right = x;
-          if (y > bottom) bottom = y;
-        }
-      }
-    }
-
-    if (right === -1 || bottom === -1) {
-      // fully transparent frame
-      this.frameOpaqueBoundsCache.set(cacheKey, null);
-      return null;
-    }
-
-    const bounds = { left, top, right, bottom };
-    this.frameOpaqueBoundsCache.set(cacheKey, bounds);
-    return bounds;
-  }
-
   private buildArcade(map: MapData): void {
     this.staticColliders = this.scene.physics.add.staticGroup();
 
@@ -111,22 +60,15 @@ export class MapCollisionManager {
           continue;
         }
 
-        const frameIndex = Number(t.id);
-        const bounds = this.getOpaqueBoundsForFrame(frameIndex);
-        if (!bounds) {
-          // 투명 프레임은 충돌로 만들지 않음
-          continue;
-        }
+        const colliderWidth = this.tileSize;
+        const colliderHeight = this.tileSize;
 
-        const colliderWidth = bounds.right - bounds.left + 1;
-        const colliderHeight = bounds.bottom - bounds.top + 1;
-
-        const worldLeft = t.x * this.tileSize + bounds.left;
-        const worldTop = t.y * this.tileSize + bounds.top;
+        const worldLeft = t.x * this.tileSize;
+        const worldTop = t.y * this.tileSize;
         const cx = worldLeft + colliderWidth / 2;
         const cy = worldTop + colliderHeight / 2;
 
-        const img = this.staticColliders.create(cx, cy, 'red') as Phaser.Physics.Arcade.Image;
+        const img = this.staticColliders.create(cx, cy, this.tilesTextureKey) as Phaser.Physics.Arcade.Image;
         img.setVisible(this.debugVisible);
         img.setAlpha(this.debugVisible ? 0.3 : 1);
         img.setDisplaySize(colliderWidth, colliderHeight);
