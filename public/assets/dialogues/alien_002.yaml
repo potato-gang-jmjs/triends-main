@@ -1,0 +1,18 @@
+npc_id: "시무린2"
+conversations:
+  introduction:
+    text: "사운드가 퍼져—들려? 바람결의 위상 차이를 맞추면 문이 열려."
+    choices:
+      - text: "위상 차이?"
+        next: "phase"
+        action: null
+      - text: "나중에 이야기하자."
+        next: null
+        action: null
+
+  phase:
+    text: "동시에 울리는 종 두 개. 왼쪽이 조금 빨라. 그 간격을 기억해."
+    choices:
+      - text: "메모해둘게."
+        next: null
+        action: null

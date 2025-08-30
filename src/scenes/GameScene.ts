@@ -487,14 +487,17 @@ export class GameScene extends Phaser.Scene {
             return null;
           }
           const dialogueId = spawn.overrides?.dialogueId ?? def.dialogueId;
-          const spriteKey = spawn.overrides?.spriteKey ?? def.spriteKey;
+          const spriteKey  = spawn.overrides?.spriteKey  ?? def.spriteKey;
+          const frame      = spawn.overrides?.frame      ?? def.frame;
           return {
             npcId: def.npcId,
             dialogueId,
             spriteKey,
+            frame,
             x: spawn.pos.x * tileSize + tileSize / 2,
             y: spawn.pos.y * tileSize + tileSize / 2
           } as NPCConfig;
+
         })
         .filter(Boolean) as NPCConfig[];
 

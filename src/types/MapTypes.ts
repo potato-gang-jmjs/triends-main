@@ -70,6 +70,7 @@ export interface NPCDefinition {
   npcId: string;
   dialogueId: string;
   spriteKey: string;
+  frame?: number;
   interactionRadius?: number;
 }
 
@@ -79,6 +80,7 @@ export interface NPCSpawnDef {
   overrides?: {
     dialogueId?: string;
     spriteKey?: string;
+    frame?: number;
   };
 }
 

@@ -9,6 +9,7 @@ export interface NPCConfig {
   x: number;
   y: number;
   spriteKey?: string;
+  frame?: number;
 }
 
 export class NPCManager {
@@ -54,7 +55,8 @@ export class NPCManager {
       config.y,
       config.npcId,
       config.dialogueId,
-      config.spriteKey || 'npc'
+      config.spriteKey || 'npc',
+      config.frame
     );
 
     this.npcs.set(config.npcId, npc);

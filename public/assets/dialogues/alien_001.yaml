@@ -1,0 +1,77 @@
+npc_id: "alien_001"
+conversations:
+  introduction:
+    text: "인삼이구나. 옆에는...? 이 세계 시무린은 아닌 것 같구나."
+    choices:
+      - text: "세계수의 힘"
+        next: "world_tree_power_1"
+        action: "flag:alien1_power:true"
+      - text: "세계수의 상태"
+        next: "world_tree_state_1"
+        action: "flag:alien1_state:true"
+
+  # ── [세계수의 힘] 흐름 ─────────────────────────────
+  world_tree_power_1:
+    text: "세계수는 우리 세계의 근원이자, 모든 것을 이뤄주는 힘을 지니고 있지."
+    choices:
+      - text: "(계속)"
+        next: "world_tree_power_2"
+        action: null
+
+  world_tree_power_2:
+    text: "너 옆에 있는 아이도 구원 받을 수 있을 거야."
+    choices:
+      - text: "(계속)"
+        next: "ask_more"
+        action: null
+
+  # ── [세계수의 상태] 흐름 ─────────────────────────────
+  world_tree_state_1:
+    text: "세계수는 본래 윗마을에서 물을, 아랫마을에서 빛을 받아왔지."
+    choices:
+      - text: "(계속)"
+        next: "world_tree_state_2"
+        action: null
+
+  world_tree_state_2:
+    text: "그러나 지금은 두 마을 다 문제가 생겨 세계수가 힘을 잃은 상태야."
+    choices:
+      - text: "(계속)"
+        next: "world_tree_state_3"
+        action: null
+
+  world_tree_state_3:
+    text: "우리 시무린들은 세계수가 있어야만 힘을 낼 수 있어서 발만 동동 구르고 있어."
+    choices:
+      - text: "(계속)"
+        next: "ask_more"
+        action: null
+
+  # ── [한 가지만 들은 뒤 다시 물어보기] ────────────────
+  ask_more:
+    text: "또 물어볼 것이 있니??"
+    choices:
+      - text: "세계수의 힘"
+        next: "world_tree_power_1"
+        action: "flag:alien1_power:true"
+      - text: "세계수의 상태"
+        next: "world_tree_state_1"
+        action: "flag:alien1_state:true"
+      - text: "끝내기"
+        next: null
+        action: null
+
+  # ── [두 가지 다 들은 뒤 마지막 대사] ─────────────────
+  after_both:
+    text: "두 마을은 길을 따라가면 있단다."
+    choices:
+      - text: "(계속)"
+        next: "after_both_2"
+        action: null
+
+  after_both_2:
+    text: "세계수의 후예인 너라면 해결할 수 있을거야."
+    choices:
+      - text: "끝내기"
+        next: null
+        action: null

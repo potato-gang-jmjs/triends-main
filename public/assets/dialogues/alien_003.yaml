@@ -1,0 +1,18 @@
+npc_id: "시무린3"
+conversations:
+  introduction:
+    text: "발밑의 자국이 보여? 여긴 아래쪽 사물들이 비어 있는 구역이야."
+    choices:
+      - text: "왜 비어있어?"
+        next: "reason"
+        action: null
+      - text: "알려줘서 고마워."
+        next: null
+        action: null
+
+  reason:
+    text: "지하 뿌리가 약해서 무거운 걸 두면 내려앉아. 발걸음도 가볍게."
+    choices:
+      - text: "조심할게."
+        next: null
+        action: null
