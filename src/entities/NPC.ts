@@ -17,15 +17,18 @@ export class NPC {
     y: number, 
     npcId: string,
     dialogueId: string,
-    spriteKey: string = 'npc'
+    spriteKey: string = 'npc',
+    frame?: number
   ) {
     this.scene = scene;
     this.npcId = npcId;
     this.dialogueId = dialogueId;
 
-    // NPC 스프라이트 생성 (임시로 파란 사각형)
-    this.sprite = scene.physics.add.sprite(x, y, spriteKey);
-    this.sprite.setScale(1.5);
+    // NPC 스프라이트 생성 
+    this.sprite = scene.physics.add.sprite(x, y, spriteKey, frame);
+    // 96x96 시트(외계 주민)는 원본 크기를 유지하고, 임시 32x32 네모도 깨지지 않게 기본 스케일 1로.
+    this.sprite.setScale(1);
+
     this.sprite.setImmovable(true);
     this.sprite.body!.setSize(32, 32); // 충돌 박스 크기
     this.sprite.setDepth(1000);

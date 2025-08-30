@@ -1,4 +1,6 @@
 {
   "background": -100,
-  "tree": 100
+  "main_tree_lower": 10,
+  "objects": 20,
+  "main_tree_upper": 1000
 }

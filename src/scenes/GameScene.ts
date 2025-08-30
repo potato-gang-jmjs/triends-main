@@ -33,6 +33,8 @@ export class GameScene extends Phaser.Scene {
   private mapManager!: MapManager;
   private objectManager!: ObjectManager;
   private isTransitioning = false;
+  private isOpeningCutscene: boolean = false;
+  private openingStep: number = 0;
   private portalHintContainer!: Phaser.GameObjects.Container;
   private vineSystem!: VineExtensionSystem;
   private wateringSystem!: WateringCanSystem;
@@ -354,13 +356,17 @@ export class GameScene extends Phaser.Scene {
       repeat: -1
     });
 
-    
+    const tileSize = this.mapManager.getTileSize();
     // 플레이어 생성
     // Player1 생성
-    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 256);
+    this.player = new Player(this, tileSize * 50, tileSize * 24);
 
     // Player2 생성
     this.player2 = new GinsengPlayer(this, GAME_WIDTH / 2 + 128, GAME_HEIGHT / 2);
+    // 오프닝용: 처음에는 화면 밖 + 투명 (등장 演出)
+    this.player2.sprite
+      .setAlpha(0)
+      .setPosition(this.player.sprite.x + 400, this.player.sprite.y);
 
     // 레이저 그룹 생성
     this.sunflowerLasers = this.physics.add.group({
@@ -424,7 +430,92 @@ export class GameScene extends Phaser.Scene {
 
     // 하트 UI 생성 (좌상단)
     this.createHeartsUI();
+
+    // 오프닝 컷신 시작
+    this.startOpeningCutscene();
   }
+
+    // === Opening Cutscene ===
+  private startOpeningCutscene(): void {
+    this.isOpeningCutscene = true;
+    this.haltPlayersAndResetKeys();
+
+    const fadeMs = 600;
+    // 처음 화면 페이드 인 후 독백 시작
+    this.cameras.main.fadeIn(fadeMs, 0, 0, 0);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => {
+      this.openingStep = 0;
+
+      // 0단계: 우주인 독백
+      this.showOpeningLine('우주인', '여긴 어디지,,,? 난 뭐하다 여기 있더라,,,');
+
+      // 스페이스로 진행
+      this.input.keyboard!.on('keydown-SPACE', this.advanceOpeningCutscene, this);
+    });
+  }
+
+  private advanceOpeningCutscene = (): void => {
+    if (!this.isOpeningCutscene) return;
+
+    this.openingStep++;
+
+    switch (this.openingStep) {
+      case 1: {
+        // 인삼이 등장 演出 후 첫 멘트
+        const targetX = this.player.sprite.x + 96;
+        const targetY = this.player.sprite.y;
+
+        this.tweens.add({
+          targets: this.player2.sprite,
+          alpha: 1,
+          x: targetX,
+          y: targetY,
+          duration: 500,
+          onComplete: () => {
+            this.showOpeningLine('인삼', '저기...');
+          }
+        });
+        break;
+      }
+      case 2:
+        this.showOpeningLine('우주인', '우왁!! 식물이 말을 하잖아??');
+        break;
+      case 3:
+        this.showOpeningLine('인삼', '지금 그게 중요해?!?! 너 갑자기 하늘에서 떨어졌다고.');
+        break;
+      case 4:
+        this.showOpeningLine('우주인', '읭?');
+        break;
+      case 5:
+        this.showOpeningLine('인삼', '읭 이러네 너 아무것도 기억 못해??');
+        break;
+      case 6:
+        this.showOpeningLine('우주인', '으,, 그러게 뭐지,,?');
+        break;
+      case 7:
+        this.showOpeningLine('인삼', '일단 세계수한테 가보자! 그분이 뭐든 이뤄주실 거야.');
+        break;
+      case 8:
+        this.showOpeningLine('우주인', '(일단 따라가볼까,,,?)');
+        break;
+      default:
+        this.endOpeningCutscene();
+        break;
+    }
+  };
+
+  private showOpeningLine(name: string, text: string): void {
+    // DialogueBox를 직접 사용해서 문장만 표시 (선택지 없음)
+    this.dialogueBox.showDialogue({ text } as any, name, []);
+  }
+
+  private endOpeningCutscene(): void {
+    this.dialogueBox.hide();
+    this.isOpeningCutscene = false;
+    // 스페이스 진행 핸들러 해제
+    this.input.keyboard!.off('keydown-SPACE', this.advanceOpeningCutscene as any, this);
+  }
+  // === /Opening Cutscene ===
 
   private setupDialogueEvents(): void {
     // 대화 시작 시
@@ -462,6 +553,13 @@ export class GameScene extends Phaser.Scene {
         this.dialogueManager.completeTyping();
       }
     };
+
+    // === 대화 기반 맵 전환(map_travel) 이벤트 ===
+    this.events.on('map_travel', (payload: { mapId: string; spawn: { x: number; y: number }; fadeMs?: number }) => {
+      const { mapId, spawn, fadeMs } = payload || ({} as any);
+      if (!mapId || !spawn) return;
+      this.performDirectMapTransition(mapId, spawn, fadeMs);
+    });
   }
 
   private async loadNPCsForMap(mapId: string): Promise<void> {
@@ -488,14 +586,17 @@ export class GameScene extends Phaser.Scene {
             return null;
           }
           const dialogueId = spawn.overrides?.dialogueId ?? def.dialogueId;
-          const spriteKey = spawn.overrides?.spriteKey ?? def.spriteKey;
+          const spriteKey  = spawn.overrides?.spriteKey  ?? def.spriteKey;
+          const frame      = spawn.overrides?.frame      ?? def.frame;
           return {
             npcId: def.npcId,
             dialogueId,
             spriteKey,
+            frame,
             x: spawn.pos.x * tileSize + tileSize / 2,
             y: spawn.pos.y * tileSize + tileSize / 2
           } as NPCConfig;
+
         })
         .filter(Boolean) as NPCConfig[];
 
@@ -925,15 +1026,22 @@ export class GameScene extends Phaser.Scene {
       ? portalManager.findPortalIfBothInside(p1, p2, tileSize)
       : portalManager.findPortalIfAnyInside(p1, p2, tileSize);
     
-    // 디버그: 포털 상호작용 시도 시 정보 출력  
+    // 해금 플래그 매핑 (확장 가능)
+    const portalUnlockFlags: Record<string, string> = {
+      to_forest_01: 'portals_unlocked_lower',
+      to_water_village_01: 'portals_unlocked_upper',
+    };
+
+    // 발견된 포털이 있으면 해금 여부 확인
     if (portal) {
-      console.log('포털 발견:', portal);
-      console.log('P1 위치:', Math.floor(p1.x / tileSize), Math.floor(p1.y / tileSize));
-      console.log('P2 위치:', Math.floor(p2.x / tileSize), Math.floor(p2.y / tileSize));
+      const requiredFlag = portalUnlockFlags[portal.id];
+      if (requiredFlag && !SaveManager.getFlag(requiredFlag)) {
+        // 잠겨 있으면 무시
+        return false;
+      }
       this.performPortalTransition(portal);
       return true;
     } else {
-      console.log('포털 없음. P1:', Math.floor(p1.x / tileSize), Math.floor(p1.y / tileSize), 'P2:', Math.floor(p2.x / tileSize), Math.floor(p2.y / tileSize));
       return false;
     }
   }
@@ -1005,6 +1113,69 @@ export class GameScene extends Phaser.Scene {
       });
   }
 
+  private performDirectMapTransition(nextMapId: string, spawnTile: { x: number; y: number }, fadeMs: number = 300): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+
+    // 입력 잠금 및 플레이어 정지
+    this.haltPlayersAndResetKeys();
+    this.input.keyboard?.enabled && (this.input.keyboard.enabled = false);
+
+    // 사전 프리페치
+    const nextKey = 'map:' + nextMapId;
+    fetch(`assets/maps/${nextMapId}/map.json`, { cache: 'no-cache' })
+      .then((pre) => {
+        if (!pre.ok) throw new Error('map.json not found');
+
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, async () => {
+          // 현재 맵 상태 저장/언로드
+          this.objectManager?.saveState();
+          this.mapManager.unload();
+          const ok = await this.mapManager.load(nextKey);
+          if (!ok) {
+            console.error('맵 로드 실패, 전환 취소');
+            this.cameras.main.fadeIn(fadeMs, 0, 0, 0);
+            this.input.keyboard && (this.input.keyboard.enabled = true);
+            this.isTransitioning = false;
+            return;
+          }
+
+          // 스폰 배치 (타일좌표 → 픽셀중심)
+          const tileSize = this.mapManager.getTileSize();
+          const spawnX = spawnTile.x * tileSize + tileSize / 2;
+          const spawnY = spawnTile.y * tileSize + tileSize / 2;
+          this.player.sprite.setPosition(spawnX, spawnY);
+          this.player2.sprite.setPosition(spawnX + tileSize * 2, spawnY);
+
+          // 새 맵의 NPC/오브젝트 재로딩
+          await this.loadNPCsForMap(nextMapId);
+          this.mapManager.attachPlayer(this.player.sprite);
+          this.mapManager.attachPlayer(this.player2.sprite);
+
+          const tilesKey2 = this.mapManager.getTilesTextureKey();
+          const tileSize2 = this.mapManager.getTileSize();
+          this.objectManager?.unload();
+          this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
+          await this.objectManager.load(nextMapId, tilesKey2, tileSize2);
+          this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
+
+          this.cameras.main.startFollow(this.player.sprite);
+
+          this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => {
+            this.input.keyboard && (this.input.keyboard.enabled = true);
+            this.isTransitioning = false;
+          });
+          this.cameras.main.fadeIn(fadeMs, 0, 0, 0);
+        });
+        this.cameras.main.fadeOut(fadeMs, 0, 0, 0);
+      })
+      .catch((err) => {
+        console.error('다음 맵 프리페치 실패, 전환 취소:', err);
+        this.input.keyboard && (this.input.keyboard.enabled = true);
+        this.isTransitioning = false;
+      });
+  }
+
   private createPortalHintUI(): void {
     const width = 340;
     const height = 36;
@@ -1036,8 +1207,21 @@ export class GameScene extends Phaser.Scene {
     const portal = this.portalRequiresBothPlayers 
       ? portalManager.findPortalIfBothInside(p1, p2, tileSize)
       : portalManager.findPortalIfAnyInside(p1, p2, tileSize);
-      
-    this.portalHintContainer?.setVisible(!!portal);
+    
+    // 해금 플래그 매핑 (확장 가능)
+    const portalUnlockFlags: Record<string, string> = {
+      to_forest_01: 'portals_unlocked_lower',
+      to_water_village_01: 'portals_unlocked_upper',
+    };
+
+    // 잠금이면 힌트 비표시
+    if (portal) {
+      const requiredFlag = portalUnlockFlags[portal.id];
+      const unlocked = requiredFlag ? SaveManager.getFlag(requiredFlag) : true;
+      this.portalHintContainer?.setVisible(!!unlocked);
+    } else {
+      this.portalHintContainer?.setVisible(false);
+    }
   }
 
   private createHeartsUI(): void {
@@ -1154,8 +1338,8 @@ export class GameScene extends Phaser.Scene {
 
 
   update(): void {
-    // 대화 중이 아닐 때만 플레이어 이동
-    if (!this.dialogueManager.getState().isActive) {
+    // 대화/컷신 중이 아닐 때만 플레이어 이동
+    if (!this.isOpeningCutscene && !this.dialogueManager.getState().isActive) {
       // player1 은 화살표, player2 는 WASD
       if ((this.vineSystem as any)?.isP1MovementLocked?.()) {
         this.player.haltMovementAndIdle();

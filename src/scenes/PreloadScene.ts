@@ -77,6 +77,13 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64
     });
+
+    // ───── NPC: 96x96 외계인 3프레임 ─────
+    this.load.spritesheet('first_residents', 'assets/npcs/first_residents.png', {
+      frameWidth: 96,
+      frameHeight: 96
+    });
+
     // 오브젝트 전용 스프라이트시트(예: 16x16)를 별도 키로 로드 (오브젝트는 스케일로 확대 표시)
     // 현재는 main 맵 폴더의 보조 시트를 사용(spritesheet[2].png)
     this.load.spritesheet('obj16', 'assets/maps/main/spritesheet[2].png', {

@@ -21,6 +21,8 @@ export class DialogueManager {
   private actionProcessor: ActionProcessor;
   private conditionEvaluator: ConditionEvaluator;
   private state: DialogueState;
+  private flags: Record<string, boolean> = {};
+  private scene!: Phaser.Scene;
 
   // 이벤트
   public onDialogueStart?: (npc: NPC, dialogue: DialogueData) => void;
@@ -41,6 +43,29 @@ export class DialogueManager {
       isWaitingForChoice: false,
       isTyping: false
     };
+    this.scene = _scene;
+  }
+
+  // flag: 헬퍼 — key를 string으로 보장하여 TS2538 방지
+  private setFlagFromAction(action?: string): void {
+    if (!action || !action.startsWith('flag:')) return;
+
+    const parts = action.split(':');
+    const key: string = String(parts[1] ?? '');   // ← string 강제
+    const raw: string = String(parts[2] ?? 'true');
+    if (!key) return;
+
+    const val = raw === 'true';
+    this.flags[key] = val;
+
+    // (선택) 세이브에도 반영
+    const npcId = this.state.currentNPC?.npcId;
+    if (npcId) {
+      const save = SaveManager.loadGame().dialogues[npcId] || { completedDialogues: [], variables: {} };
+      save.variables = save.variables || {};
+      (save.variables as Record<string, boolean>)[key] = val;
+      SaveManager.updateDialogueState(npcId, save);
+    }
   }
 
   // 대화 시작
@@ -151,13 +176,27 @@ export class DialogueManager {
 
     // 액션 실행
     if (choice.action) {
-      this.actionProcessor.processAction(choice.action);
+      if (!this.tryHandleMapTravelAction(choice.action)) {
+        this.actionProcessor.processAction(choice.action);
+      }
     }
+    this.setFlagFromAction(choice.action);
 
     // 다음 대화로 이동
     if (choice.next) {
       this.moveToConversation(choice.next);
     } else {
+      // 두 주제를 모두 들었고, 아직 덕담을 안 보여줬다면 1회 우회
+      if (
+        this.state.currentNPC?.dialogueId === 'alien_001' &&
+        this.flags['alien1_power'] === true &&
+        this.flags['alien1_state'] === true &&
+        this.flags['alien1_after_both_shown'] !== true
+      ) {
+        this.flags['alien1_after_both_shown'] = true;
+        this.moveToConversation('after_both'); // alien_001.yaml에 존재
+        return; // 여기서 바로 종료하지 말고 덕담 먼저
+      }
       this.endDialogue();
     }
   }
@@ -193,8 +232,11 @@ export class DialogueManager {
 
     // 액션이 있으면 실행
     if (conversation.action) {
-      this.actionProcessor.processAction(conversation.action);
+      if (!this.tryHandleMapTravelAction(conversation.action)) {
+        this.actionProcessor.processAction(conversation.action);
+      }
     }
+    this.setFlagFromAction(conversation.action);
 
     // 선택지 준비
     const availableChoices = this.getAvailableChoices(conversation.choices || []);
@@ -275,5 +317,27 @@ export class DialogueManager {
     currentState.lastInteractionTime = Date.now();
 
     SaveManager.updateDialogueState(npcId, currentState);
+  }
+
+  // 특수 액션: 맵 전환 (map_travel:mapId:tileX:tileY[:fadeMs]) — 씬 이벤트로 위임
+  private tryHandleMapTravelAction(action: string): boolean {
+    if (!action || !action.startsWith('map_travel:')) return false;
+    const parts = action.split(':');
+    if (parts.length < 4) {
+      console.error('map_travel 액션 형식 오류:', action);
+      return true;
+    }
+    const mapId = parts[1];
+    const tileX = Number(parts[2]);
+    const tileY = Number(parts[3]);
+    const fadeMs = parts[4] ? Number(parts[4]) : undefined;
+    if (!mapId || Number.isNaN(tileX) || Number.isNaN(tileY)) {
+      console.error('map_travel 파라미터 오류:', { mapId, tileX, tileY, fadeMs });
+      return true;
+    }
+    this.scene.events.emit('map_travel', { mapId, spawn: { x: tileX, y: tileY }, fadeMs });
+    // 전환 직전 대화 종료
+    this.endDialogue();
+    return true;
   }
 } 

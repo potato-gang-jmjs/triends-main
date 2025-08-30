@@ -1,0 +1,30 @@
+npc_id: "시무린3"
+conversations:
+  introduction:
+    text: "여긴 아랫마을로 가는 길이야."
+    choices:
+      - text: "(계속)"
+        next: "upper_village_light_1"
+        action: null
+
+  # ── [아랫마을 빛 사정 안내] ─────────────────────────────
+  upper_village_light_1:
+    text: "아랫마을, 빛이 사라져 버렸어."
+    choices:
+      - text: "(계속)"
+        next: "upper_village_light_2"
+        action: null
+
+  upper_village_light_2:
+    text: "주민들은 제대로 움직이지도 못하고, 세계수도 빛을 못 받고 있어."
+    choices:
+      - text: "(계속)"
+        next: "upper_village_light_3"
+        action: null
+
+  upper_village_light_3:
+    text: "어떤 위협이 기다릴지 몰라. 하지만 너희라면 할 수 있을거야. 힘내!!"
+    choices:
+      - text: "끝내기"
+        next: null
+        action: null

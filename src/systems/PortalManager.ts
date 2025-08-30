@@ -58,14 +58,14 @@ export class PortalManager {
     if (!this.debugVisible) return;
     if (!this.debugGraphics) return;
     this.debugGraphics.clear();
-    // NPC와 구분되는 시안색 반투명 채움 + 테두리
-    this.debugGraphics.fillStyle(0x00ffff, 0.15);
-    this.debugGraphics.lineStyle(2, 0x00ffff, 0.9);
     for (const p of this.portals) {
       const x = p.area.x * tileSize;
       const y = p.area.y * tileSize;
       const w = p.area.width * tileSize;
       const h = p.area.height * tileSize;
+      const color = (p.options as any)?.color ?? 0x00ffff;
+      this.debugGraphics.fillStyle(color, 0.15);
+      this.debugGraphics.lineStyle(2, color, 0.9);
       this.debugGraphics.fillRect(x, y, w, h);
       this.debugGraphics.strokeRect(x, y, w, h);
     }

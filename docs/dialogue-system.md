@@ -268,6 +268,30 @@ shop_menu:
       action: "add_stat:hearts_p2:1"
 ```
 
+### 4. 대화 기반 맵 전환(map_travel)
+
+- 대화 선택지 또는 대화 노드의 `action`에 `map_travel:mapId:tileX:tileY[:fadeMs]`를 지정하면, 해당 맵으로 전환됩니다.
+- 좌표는 타일 좌표 기준이며, 스폰은 타일 중앙(픽셀)로 배치됩니다.
+- 전환은 `DialogueManager`가 씬 이벤트(`map_travel`)를 emit하고, `GameScene`이 전환을 수행하는 구조입니다.
+
+```yaml
+# alien_003.yaml 예시
+upper_village_light_3:
+  text: "어떤 위협이 기다릴지 몰라. 하지만 너희라면 할 수 있을거야. 힘내!!"
+  choices:
+    - text: "아랫마을로 이동한다"
+      action: "map_travel:forest:3:7:400"  # mapId=forest, 타일 (3,7), 페이드 400ms
+      next: null
+    - text: "끝내기"
+      next: null
+      action: null
+```
+
+동작 요약:
+- 대화 중 `map_travel` 감지 → 대화 종료 → 페이드 아웃 → 현재 맵 언로드 → 새 맵 로드 → 스폰 → 페이드 인.
+- 2P는 1P 옆(타일 크기만큼 우측)으로 함께 배치됩니다.
+- 프리페치 실패 시 전환은 취소되고 입력은 복구됩니다.
+
 ## API 레퍼런스
 
 ### DialogueManager

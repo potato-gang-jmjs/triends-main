@@ -170,6 +170,31 @@ action: "teleport_tag:harbor:p2"
 - 이동 직후 속도를 0으로 만들고, 현재 방향의 idle 프레임으로 정지합니다.
 - 위치 저장은 기존 주기 규칙을 따릅니다.
 
+### 7. 맵 전환 액션 (대화 기반)
+
+#### `map_travel:mapId:tileX:tileY[:fadeMs]`
+- 다른 맵으로 전환합니다. 이 액션은 대화 시스템(DialogueManager)에서 가로채어 처리합니다.
+- 좌표는 타일 좌표 기준입니다. 스폰은 타일 중앙(픽셀)로 정렬됩니다.
+- `fadeMs`(선택): 전환 페이드 시간(ms). 기본값 300ms.
+
+```yaml
+# forest 맵의 (3,7) 타일로 전환(페이드 400ms)
+choices:
+  - text: "아랫마을로 이동한다"
+    action: "map_travel:forest:3:7:400"
+    next: null
+```
+
+동작 규칙:
+- `DialogueManager`가 `map_travel`을 감지해 씬 이벤트(`map_travel`)를 emit합니다.
+- `GameScene`가 이벤트를 수신해 페이드 아웃 → 언로드/로드 → 스폰 배치 → 페이드 인 순으로 전환합니다.
+- 두 플레이어를 함께 스폰하며, 2P는 1P 옆(타일 크기만큼 우측)으로 배치됩니다.
+- 전환 직전 대화는 자동 종료됩니다.
+- 맵 데이터(`assets/maps/<mapId>/map.json`) 프리페치에 실패하면 전환이 취소되고 입력이 복구됩니다.
+
+주의:
+- `map_travel`은 `ActionProcessor`가 아닌 `DialogueManager`에서만 처리됩니다. 일반 액션 검증(Validate) 대상이 아닙니다.
+
 ## 시스템 구조
 
 ### ActionProcessor 클래스
@@ -345,6 +370,7 @@ actionProcessor.processAction("add_stat:gold:50;set_flag:rich:true");
 | `trigger_event` | `trigger_event:이벤트` | 이벤트 발생 | `trigger_event:level_up` |
 | `teleport` | `teleport:x:y[:target]` | 좌표 텔레포트 | `teleport:512:256:both` |
 | `teleport_tag` | `teleport_tag:tag[:target]` | 태그 텔레포트 | `teleport_tag:temple:p2` |
+| `map_travel` | `map_travel:mapId:tileX:tileY[:fadeMs]` | 맵 전환(대화 기반) | `map_travel:forest:3:7:400` |
 
 ### 아이템 시스템
 

@@ -106,6 +106,20 @@ export class DialogueBox {
       if (!this.isVisible) return;
 
       const keyCode = event.code;
+
+      // ── Space 처리 ──
+      if (keyCode === 'Space') {
+        // A) 타이핑 중이면 스페이스로 즉시 완료
+        if (this.isTyping) {
+          this.completeTyping();
+          return;
+        }
+        // B) 선택지가 1개뿐이면 스페이스로 곧장 선택
+        if (this.choiceButtons.length === 1) {
+          this.selectChoice(0);
+          return;
+        }
+      }
       
       // 숫자 키 1-4로 선택지 선택
       if (keyCode >= 'Digit1' && keyCode <= 'Digit4') {
@@ -231,6 +245,11 @@ export class DialogueBox {
       
       choiceButton.on('pointerout', () => {
         choiceButton.setStyle({ backgroundColor: '#333333' });
+      });
+
+      // 클릭으로 선택
+      choiceButton.on('pointerdown', () => {
+        this.selectChoice(index);
       });
 
       this.choiceButtons.push(choiceButton);
