@@ -1,0 +1,73 @@
+npc_id: "elder_001"
+conversations:
+  introduction:
+    text: "여행자여... 이 마을을 지켜주던 고래뿌리개가 멈춰버렸다네. 세계수의 숨결이 끊어진 게 분명하지. 지하 깊은 수로에서 괴물이 물을 훔쳐가고 있다네."
+    condition: "flags.water_quest_started == false"
+    choices:
+      - text: "무슨 일이 있었나요?"
+        next: "explain_problem"
+        action: null
+      - text: "제가 도울 수 있을까요?"
+        next: "quest_offer"
+        action: null
+      - text: "나중에 다시 오겠습니다"
+        next: null
+        action: null
+
+  explain_problem:
+    text: "물을 삼키는 해괴한 생물이 나타났네. 우리가 내려가려 했지만... 마른 수로는 너무 위험했네. 누군가 그 괴물을 처치해야 한다네."
+    choices:
+      - text: "제가 도와드리겠습니다"
+        next: "quest_accept"
+        action: "set_flag:water_quest_started:true"
+      - text: "너무 위험할 것 같습니다"
+        next: "quest_decline"
+        action: null
+
+  quest_offer:
+    text: "정말인가? 그렇다면 지하 수로로 내려가서 괴물을 처치해 주게. 마을의 생명이 걸린 일이네."
+    choices:
+      - text: "알겠습니다. 가보겠습니다"
+        next: "quest_accept"
+        action: "set_flag:water_quest_started:true"
+      - text: "좀 더 생각해보겠습니다"
+        next: "quest_decline"
+        action: null
+
+  quest_accept:
+    text: "고맙네! 저기 마을 남쪽에 수로 입구가 있다네. 조심하게나. 그리고... 행운을 비네."
+    choices:
+      - text: "다녀오겠습니다"
+        next: null
+        action: null
+
+  quest_decline:
+    text: "그렇다면... 어쩔 수 없지. 하지만 이대로 두면 마을이 전부 죽어버릴 것이네..."
+    choices:
+      - text: "죄송합니다"
+        next: null
+        action: null
+
+  quest_progress:
+    text: "아직 괴물을 처치하지 못했나? 마을 사람들이 점점 더 약해지고 있다네..."
+    condition: "flags.water_quest_started == true && flags.boss_defeated == false"
+    choices:
+      - text: "곧 처치하고 오겠습니다"
+        next: null
+        action: null
+
+  quest_complete:
+    text: "오! 정말로 해냈군! 물이 다시 흐르기 시작했네! 고래뿌리개도 곧 깨어날 것이야! 정말 고맙네!"
+    condition: "flags.boss_defeated == true && flags.water_restored == false"
+    choices:
+      - text: "다행입니다"
+        next: "final_thanks"
+        action: "set_flag:water_restored:true;add_stat:gold:100"
+
+  final_thanks:
+    text: "자네 덕분에 마을이 살아났네. 이 은혜는 평생 잊지 않을 것이야. 작은 보답이지만 받아주게."
+    condition: "flags.water_restored == true"
+    choices:
+      - text: "감사합니다"
+        next: null
+        action: null

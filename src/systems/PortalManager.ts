@@ -13,6 +13,7 @@ export class PortalManager {
 
   public setPortals(portals: PortalDef[] | null | undefined): void {
     this.portals = Array.isArray(portals) ? portals : [];
+    console.log('포털 로드됨:', this.portals.length, '개', this.portals);
   }
 
   public clear(): void {
@@ -81,6 +82,25 @@ export class PortalManager {
     for (const portal of this.portals) {
       if (
         this.contains(portal, p1.x, p1.y, tileSize) &&
+        this.contains(portal, p2.x, p2.y, tileSize)
+      ) {
+        return portal;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns the first portal that contains at least one player (tile-based AABB include check).
+   */
+  public findPortalIfAnyInside(
+    p1: Phaser.Math.Vector2,
+    p2: Phaser.Math.Vector2,
+    tileSize: number
+  ): PortalDef | null {
+    for (const portal of this.portals) {
+      if (
+        this.contains(portal, p1.x, p1.y, tileSize) ||
         this.contains(portal, p2.x, p2.y, tileSize)
       ) {
         return portal;

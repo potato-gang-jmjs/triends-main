@@ -1,0 +1,9 @@
+[
+  { "npcId": "elder_001", "pos": { "x": 15, "y": 10 } },
+  { "npcId": "villager_water_001", "pos": { "x": 8, "y": 5 } },
+  { "npcId": "villager_water_002", "pos": { "x": 22, "y": 8 } },
+  { "npcId": "villager_water_003", "pos": { "x": 12, "y": 14 } },
+  { "npcId": "child_water_001", "pos": { "x": 6, "y": 12 } },
+  { "npcId": "child_water_002", "pos": { "x": 7, "y": 12 } },
+  { "npcId": "whale_sprout_001", "pos": { "x": 15, "y": 6 } }
+]
