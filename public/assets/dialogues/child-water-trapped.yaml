@@ -1,0 +1,72 @@
+npc_id: "child_water_trapped"
+conversations:
+  introduction:
+    text: "도와줘요! 여기서 못 나가겠어요! 무서워요!"
+    condition: "flags.channel_2_cleared == false"
+    choices:
+      - text: "어떻게 여기에 왔니?"
+        next: "explain_situation"
+        action: null
+      - text: "곧 구해줄게, 기다려"
+        next: "wait_response"
+        action: null
+
+  explain_situation:
+    text: "친구들이랑 놀다가... 물이 갑자기 말라서... 길을 잃었어요... 집에 가고 싶어요..."
+    choices:
+      - text: "용감했구나, 조금만 더 기다려"
+        next: "brave_response"
+        action: null
+      - text: "길을 만들어줄게"
+        next: "rescue_promise"
+        action: null
+
+  wait_response:
+    text: "정말요? 빨리 와주세요... 무서워요..."
+    choices:
+      - text: "금방 갈게"
+        next: null
+        action: null
+
+  brave_response:
+    text: "전... 전 용감하지 않아요... 무서워요..."
+    choices:
+      - text: "아니야, 넌 정말 용감해"
+        next: "encouragement"
+        action: null
+
+  rescue_promise:
+    text: "어떻게요? 물도 없고... 길도 없는데..."
+    choices:
+      - text: "방법이 있어, 믿어봐"
+        next: "trust_response"
+        action: null
+
+  encouragement:
+    text: "정말요? 엄마가 보고 싶어요..."
+    choices:
+      - text: "곧 엄마를 만날 수 있어"
+        next: null
+        action: null
+
+  trust_response:
+    text: "네... 믿을게요... 빨리 와주세요..."
+    choices:
+      - text: "반드시 구해줄게"
+        next: null
+        action: null
+
+  rescued:
+    text: "와! 길이 생겼어요! 정말 대단해요! 이제 집에 갈 수 있어요!"
+    condition: "flags.channel_2_cleared == true"
+    choices:
+      - text: "다행이다"
+        next: "gratitude"
+        action: null
+
+  gratitude:
+    text: "고마워요! 정말 정말 고마워요! 엄마한테 영웅이라고 말해줄게요!"
+    choices:
+      - text: "조심해서 가"
+        next: null
+        action: null

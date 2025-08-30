@@ -1,0 +1,72 @@
+npc_id: "child_water"
+conversations:
+  introduction:
+    text: "안 나와... 아무리 파도 물이 안 나와... 이 웅덩이에서 늘 물이 나왔는데..."
+    condition: "flags.water_restored == false"
+    choices:
+      - text: "무엇을 하고 있니?"
+        next: "digging_explanation"
+        action: null
+      - text: "곧 물이 나올 거야"
+        next: "hope_response"
+        action: null
+
+  digging_explanation:
+    text: "물을 찾고 있어요... 엄마가 목말라하셔서... 근데 아무리 파도 안 나와요..."
+    choices:
+      - text: "조금만 기다려봐"
+        next: "patience_response"
+        action: null
+      - text: "형이 물을 가져다 줄게"
+        next: "promise_response"
+        action: null
+
+  hope_response:
+    text: "정말요? 고래뿌리개가 다시 일어나면, 물은 돌아올 거죠? 그렇다고 해줘요..."
+    choices:
+      - text: "그럼, 분명히 돌아올 거야"
+        next: "relief_response"
+        action: null
+
+  patience_response:
+    text: "언제까지 기다려야 해요? 엄마가 너무 아파해요..."
+    choices:
+      - text: "곧이야, 걱정하지 마"
+        next: null
+        action: null
+
+  promise_response:
+    text: "정말요? 약속이에요? 새끼손가락 걸어요!"
+    choices:
+      - text: "약속한다!"
+        next: "pinky_promise"
+        action: null
+
+  pinky_promise:
+    text: "고마워요! 빨리 돌아와요!"
+    choices:
+      - text: "응, 곧 올게"
+        next: null
+        action: null
+
+  relief_response:
+    text: "다행이에요... 무서웠어요... 물이 없으면 어떻게 되는 거죠?"
+    choices:
+      - text: "걱정 안 해도 돼"
+        next: null
+        action: null
+
+  water_restored:
+    text: "와! 물이 나와요! 정말 나와요! 고마워요, 형! 약속 지켜줘서!"
+    condition: "flags.water_restored == true"
+    choices:
+      - text: "다행이다!"
+        next: "happy_ending"
+        action: null
+
+  happy_ending:
+    text: "이제 엄마도 물을 마실 수 있어요! 정말 정말 고마워요!"
+    choices:
+      - text: "천만에"
+        next: null
+        action: null
