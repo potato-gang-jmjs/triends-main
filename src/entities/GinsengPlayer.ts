@@ -13,9 +13,10 @@ const GINSENG_IDLE: Record<Dir, number> = { down: 0, left: 4, right: 8, up: 12 }
 const SUNFLOWER_TEX = 'ginseng_sunflower';
 const SUNFLOWER_IDLE: Record<Dir, number> = { down: 0, left: 4, right: 8, up: 12 };
 
-// vine 시트: row0 down(0–3), row1 left(4–7), row2 right(8–11), row3 up(12–15)
+// vine 시트: 이번 기능에 한해 (down, right, left, up) 순서
 const VINE_TEX = 'ginseng_vine';
-const VINE_IDLE: Record<Dir, number> = { down: 0, left: 4, right: 8, up: 12 };
+// 각 행의 시작 프레임 인덱스: down=0, right=4, left=8, up=12
+const VINE_IDLE: Record<Dir, number> = { down: 0, right: 4, left: 8, up: 12 };
 
 function registerGinsengAnimations(scene: Phaser.Scene) {
   const a = scene.anims;
