@@ -1,15 +1,15 @@
 [
   {
     "id": "to_forest_01",
-    "area": { "x": 27, "y": 1, "width": 2, "height": 2 },
+    "area": { "x": 27, "y": 18, "width": 2, "height": 2 },
     "target": { "mapId": "forest", "spawn": { "x": 3, "y": 7 } },
-    "options": { "fadeMs": 400 }
+    "options": { "fadeMs": 400, "color": 255 }
   },
   {
     "id": "to_water_village_01",
-    "area": { "x": 14, "y": 18, "width": 4, "height": 2 },
+    "area": { "x": 14, "y": 1, "width": 4, "height": 2 },
     "target": { "mapId": "water-village", "spawn": { "x": 15, "y": 3 } },
-    "options": { "fadeMs": 400 }
+    "options": { "fadeMs": 400, "color": 16711680 }
   }
 ]
 

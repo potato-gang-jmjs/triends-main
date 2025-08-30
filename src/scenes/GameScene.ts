@@ -1026,15 +1026,22 @@ export class GameScene extends Phaser.Scene {
       ? portalManager.findPortalIfBothInside(p1, p2, tileSize)
       : portalManager.findPortalIfAnyInside(p1, p2, tileSize);
     
-    // 디버그: 포털 상호작용 시도 시 정보 출력  
+    // 해금 플래그 매핑 (확장 가능)
+    const portalUnlockFlags: Record<string, string> = {
+      to_forest_01: 'portals_unlocked_lower',
+      to_water_village_01: 'portals_unlocked_upper',
+    };
+
+    // 발견된 포털이 있으면 해금 여부 확인
     if (portal) {
-      console.log('포털 발견:', portal);
-      console.log('P1 위치:', Math.floor(p1.x / tileSize), Math.floor(p1.y / tileSize));
-      console.log('P2 위치:', Math.floor(p2.x / tileSize), Math.floor(p2.y / tileSize));
+      const requiredFlag = portalUnlockFlags[portal.id];
+      if (requiredFlag && !SaveManager.getFlag(requiredFlag)) {
+        // 잠겨 있으면 무시
+        return false;
+      }
       this.performPortalTransition(portal);
       return true;
     } else {
-      console.log('포털 없음. P1:', Math.floor(p1.x / tileSize), Math.floor(p1.y / tileSize), 'P2:', Math.floor(p2.x / tileSize), Math.floor(p2.y / tileSize));
       return false;
     }
   }
@@ -1200,8 +1207,21 @@ export class GameScene extends Phaser.Scene {
     const portal = this.portalRequiresBothPlayers 
       ? portalManager.findPortalIfBothInside(p1, p2, tileSize)
       : portalManager.findPortalIfAnyInside(p1, p2, tileSize);
-      
-    this.portalHintContainer?.setVisible(!!portal);
+    
+    // 해금 플래그 매핑 (확장 가능)
+    const portalUnlockFlags: Record<string, string> = {
+      to_forest_01: 'portals_unlocked_lower',
+      to_water_village_01: 'portals_unlocked_upper',
+    };
+
+    // 잠금이면 힌트 비표시
+    if (portal) {
+      const requiredFlag = portalUnlockFlags[portal.id];
+      const unlocked = requiredFlag ? SaveManager.getFlag(requiredFlag) : true;
+      this.portalHintContainer?.setVisible(!!unlocked);
+    } else {
+      this.portalHintContainer?.setVisible(false);
+    }
   }
 
   private createHeartsUI(): void {
