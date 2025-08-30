@@ -12,7 +12,7 @@ export class VineExtensionSystem {
   private gvm = GlobalVariableManager.getInstance();
 
   private state: VineState = 'idle';
-  private vineGraphic: Phaser.GameObjects.Rectangle | null = null;
+  private vineGraphic: Phaser.GameObjects.Rectangle | null = null; // legacy line (will be hidden when sprites active)
   private aimIndicator: Phaser.GameObjects.Line | null = null;
   private vineDirection: Phaser.Math.Vector2 = new Phaser.Math.Vector2(1, 0);
   private maxLengthPx = 0;
@@ -25,6 +25,13 @@ export class VineExtensionSystem {
   private vineHalfThicknessPx = 3;
   private p1RadiusPx = 12;
   private isP1Hooked = false;
+
+  // 스프라이트 기반 렌더링
+  private tileSize = 64;
+  private tipSprite: Phaser.GameObjects.Sprite | null = null; // 열4
+  private vineSegments: Phaser.GameObjects.Sprite[] = [];     // 열2/열3
+  private fillerSprite: Phaser.GameObjects.Sprite | null = null; // 부드러운 채움(열3), 팁에서 한 칸 뒤를 따라다님
+  private dirRowIndex: number = 0; // (down,right,left,up) → (0,1,2,3)
 
   // UI
   private pHintText!: Phaser.GameObjects.Text;
@@ -60,6 +67,138 @@ export class VineExtensionSystem {
     this.createPHintUI();
   }
 
+  private vectorToDir4(v: Phaser.Math.Vector2): 'down'|'right'|'left'|'up' {
+    // 4방향 스냅
+    if (Math.abs(v.x) >= Math.abs(v.y)) {
+      return v.x >= 0 ? 'right' : 'left';
+    } else {
+      return v.y >= 0 ? 'down' : 'up';
+    }
+  }
+
+  private dirToRowIndex(d: 'down'|'right'|'left'|'up'): number {
+    // (down,right,left,up) 순으로 0,1,2,3
+    if (d === 'down') return 0;
+    if (d === 'right') return 1;
+    if (d === 'left') return 2;
+    return 3; // up
+  }
+
+  private ensureTipSprite(): void {
+    if (this.tipSprite && this.tipSprite.active) return;
+    this.tipSprite = this.scene.add.sprite(this.owner.x, this.owner.y, 'ginseng_vine', 0);
+    this.tipSprite.setDepth(4500);
+    this.tipSprite.setOrigin(0.5, 0.5);
+    this.tipSprite.setVisible(true);
+    this.tipSprite.setAlpha(1);
+    this.tipSprite.setScrollFactor(1);
+  }
+
+  private ensureFillerSprite(): void {
+    if (this.fillerSprite && this.fillerSprite.active) return;
+    this.fillerSprite = this.scene.add.sprite(this.owner.x, this.owner.y, 'ginseng_vine', 0);
+    this.fillerSprite.setDepth(4300);
+    this.fillerSprite.setOrigin(0.5, 0.5);
+    this.fillerSprite.setVisible(true).setActive(true);
+  }
+
+  private acquireSegmentSpriteAt(index: number): Phaser.GameObjects.Sprite {
+    let s = this.vineSegments[index];
+    if (!s) {
+      s = this.scene.add.sprite(this.owner.x, this.owner.y, 'ginseng_vine', 0);
+      s.setDepth(4200);
+      s.setOrigin(0.5, 0.5);
+      s.setAlpha(1);
+      s.setScrollFactor(1);
+      this.vineSegments[index] = s;
+    }
+    s.setActive(true).setVisible(true);
+    return s;
+  }
+
+  private hideUnusedSegments(usedCount: number): void {
+    for (let i = usedCount; i < this.vineSegments.length; i++) {
+      const s = this.vineSegments[i];
+      if (s) {
+        s.setActive(false).setVisible(false);
+      }
+    }
+  }
+
+  private setVineFrame(sprite: Phaser.GameObjects.Sprite, rowIndex: number, colIndex: 1|2|3|4): void {
+    // 각 행 시작 인덱스: down=0, right=4, left=8, up=12
+    const rowStart = rowIndex * 4;
+    const frame = rowStart + (colIndex - 1);
+    sprite.setFrame(frame);
+  }
+
+  private updateVineSprites(): void {
+    // 방향 행 계산
+    const d = this.vectorToDir4(this.vineDirection);
+    this.dirRowIndex = this.dirToRowIndex(d);
+
+    // 루트 위치(플레이어)
+    const ax = this.owner.x;
+    const ay = this.owner.y;
+
+    // 팁: 연속 이동(자연스러운 성장감)
+    this.ensureTipSprite();
+    const dirUnit = this.vineDirection.clone().normalize();
+    const snappedTiles = Math.max(0, Math.floor(this.currentLengthPx / this.tileSize));
+    const tipX = ax + dirUnit.x * this.currentLengthPx;
+    const tipY = ay + dirUnit.y * this.currentLengthPx;
+    this.tipSprite!.setPosition(tipX, tipY);
+    this.setVineFrame(this.tipSprite!, this.dirRowIndex, 4); // 열4 = 팁
+
+    // 세그먼트 개수 계산 (타일 베이스)
+    // i=0: 루트에 2열(루트 인접)
+    // i>=1..snappedTiles: 3열(중간) 세그먼트
+    const segCount3 = snappedTiles;
+
+    let used = 0;
+    for (let i = 0; i <= segCount3; i++) {
+      const seg = this.acquireSegmentSpriteAt(i);
+      used++;
+      const px = ax + dirUnit.x * (i * this.tileSize);
+      const py = ay + dirUnit.y * (i * this.tileSize);
+      seg.setPosition(px, py);
+
+      // i=0은 2열(루트 인접), 그 외는 모두 3열(중간 반복)
+      this.setVineFrame(seg, this.dirRowIndex, i === 0 ? 2 : 3);
+    }
+    this.hideUnusedSegments(used);
+
+    // 부드러운 채움: 팁에서 한 칸(tileSize) 뒤 위치에 3열을 연속 이동/페이드인
+    const partialPx = this.currentLengthPx - snappedTiles * this.tileSize;
+    const fillerOffset = this.currentLengthPx - this.tileSize;
+    if (fillerOffset > 0) {
+      this.ensureFillerSprite();
+      const fx = ax + dirUnit.x * fillerOffset;
+      const fy = ay + dirUnit.y * fillerOffset;
+      this.fillerSprite!.setPosition(fx, fy);
+      this.setVineFrame(this.fillerSprite!, this.dirRowIndex, 3);
+      const alpha = Phaser.Math.Clamp(partialPx / this.tileSize, 0.2, 1);
+      this.fillerSprite!.setAlpha(alpha);
+      this.fillerSprite!.setVisible(true).setActive(true);
+    } else if (this.fillerSprite) {
+      this.fillerSprite.setVisible(false).setActive(false);
+    }
+
+    // 플레이어 스프라이트는 변신 직후 열1 프레임으로 유지됨(GinsengPlayer.setForm에서 설정)
+
+    // 레거시 라인은 가리기
+    if (this.vineGraphic) this.vineGraphic.setVisible(false);
+  }
+
+  private clearVineSprites(): void {
+    this.tipSprite?.destroy();
+    this.tipSprite = null;
+    this.fillerSprite?.destroy();
+    this.fillerSprite = null;
+    for (const s of this.vineSegments) s.destroy();
+    this.vineSegments = [];
+  }
+
   private triggerThunderEffect(): void {
     if (!this.ginsengPlayer) return;
     
@@ -75,9 +214,9 @@ export class VineExtensionSystem {
     });
   }
 
-  /** E 키가 눌려 있는 동안 이동을 잠금해야 하는지 여부 */
+  /** 능력 활성 중(owner 이동 잠금 필요 여부) */
   public shouldLockOwnerMovement(): boolean {
-    return this.keyE.isDown;
+    return this.state !== 'idle';
   }
 
   private createPHintUI(): void {
@@ -152,6 +291,9 @@ export class VineExtensionSystem {
       // 인삼이를 vine 형태로 변신
       if (this.ginsengPlayer) {
         this.ginsengPlayer.setForm('vine');
+        // 능력 중에는 본체(1열 루트)를 보이지 않게 처리 + 이동 잠금 강화
+        this.ginsengPlayer.sprite.setVisible(false);
+        this.ginsengPlayer.lockMovement();
       }
       
       // 초기 방향: Q+방향키가 눌려있다면 해당 방향, 아니면 우측
@@ -174,12 +316,8 @@ export class VineExtensionSystem {
       const add = (this.extendSpeedPxPerSec * (deltaMs / 1000));
       this.currentLengthPx = Math.min(this.currentLengthPx + add, this.maxLengthPx);
 
-      // 덩굴 시각 업데이트
-      this.ensureVineGraphic();
-      const angle = Phaser.Math.RadToDeg(Math.atan2(this.vineDirection.y, this.vineDirection.x));
-      this.vineGraphic!.setPosition(this.owner.x, this.owner.y);
-      this.vineGraphic!.setAngle(angle);
-      this.vineGraphic!.setDisplaySize(this.currentLengthPx, 6);
+      // 덩굴 시각 업데이트 (스프라이트 기반)
+      this.updateVineSprites();
 
       // 1P 훅 감지(한 번만)
       if (!this.isP1Hooked && this.player1 && this.testHitPlayer1()) {
@@ -197,12 +335,8 @@ export class VineExtensionSystem {
       const sub = (this.retractSpeedPxPerSec * (deltaMs / 1000));
       this.currentLengthPx = Math.max(this.currentLengthPx - sub, 0);
 
-      if (this.vineGraphic) {
-        const angle = Phaser.Math.RadToDeg(Math.atan2(this.vineDirection.y, this.vineDirection.x));
-        this.vineGraphic.setPosition(this.owner.x, this.owner.y);
-        this.vineGraphic.setAngle(angle);
-        this.vineGraphic.setDisplaySize(Math.max(this.currentLengthPx, 1), 6);
-      }
+      // 덩굴 시각 업데이트 (스프라이트 기반)
+      this.updateVineSprites();
 
       // 1P 끌어오기(충돌 무시 직접 이동)
       if (this.isP1Hooked && this.player1) {
@@ -215,12 +349,15 @@ export class VineExtensionSystem {
         
         // 번개 효과 트리거
         this.triggerThunderEffect();
-        // 인삼이를 원래 ginseng 형태로 복원
+        // 인삼이를 원래 ginseng 형태로 복원 + 가시성/이동 해제
         if (this.ginsengPlayer) {
           this.ginsengPlayer.setForm('ginseng');
+          this.ginsengPlayer.sprite.setVisible(true);
+          this.ginsengPlayer.unlockMovement();
         }
         
         this.destroyVine();
+        this.clearVineSprites();
         this.gvm.set('vine_collision', false);
         this.gvm.set('collision', false);
         this.gvm.set('isVineSkillActivated', false);

@@ -65,7 +65,7 @@ export class GameScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64
     });
-    this.load.spritesheet('ginseng_vine', 'assets/gimmicks/vine.png', {
+    this.load.spritesheet('ginseng_vine', 'assets/characters/ginseng_vine.png', {
       frameWidth: 64,
       frameHeight: 64
     });
