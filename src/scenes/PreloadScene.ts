@@ -93,6 +93,10 @@ export class PreloadScene extends Phaser.Scene {
       frameHeight: 64
     });
 
+    // ───── 비식이: 256x256 ─────
+    this.load.image('visigi', 'assets/npcs/visigi.png');
+
+
     // ───── 튜토리얼 오브젝트 에셋 ─────
     this.load.image('watering_can_item', 'assets/characters/watering_can.png');
     this.load.image('burning_vine', 'assets/gimmicks/vine.png'); // 불타는 덩굴용 임시

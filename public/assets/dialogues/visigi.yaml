@@ -1,0 +1,19 @@
+npc_id: "비식이"
+
+conversations:
+  introduction:
+    text: "(냠냠...) ...뭐야 너넨 누구야??"
+    choices:
+      - text: "빛을 지키러 왔지. 너가 이 세계의 빛을 모두 먹어 버렸어."
+        next: "talk1"
+
+  talk1:
+    text: "엇?? 정말??!! 생각없이 먹다보니 그렇게 됐네."
+    choices:
+      - text: "(...? 착한 아이였군.)"
+        next: "talk2"
+
+  talk2:
+    text: "이제 조심할게!! 안녕~~"
+    choices: []
+    action: "set_flag:light_quest_ended:true"
