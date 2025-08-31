@@ -271,6 +271,13 @@ export class VineExtensionSystem {
   }
 
   public update(deltaMs: number): void {
+    // 능력이 해금되었는지 확인
+    const isUnlocked = this.gvm.get('ability_vine_extension_unlocked') === true;
+    if (!isUnlocked) {
+      this.setPHintVisible(false);
+      return;
+    }
+    
     const isNearWater = !!this.gvm.get('isNearWater');
     const isWaterNearby = !!this.gvm.get('waterNearby'); // 1P의 물뿌리기로 인한 효과
     const canUseVine = isNearWater || isWaterNearby;

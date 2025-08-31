@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cliff_watering_can",
+    "kind": "interactive",
+    "pos": { "x": 10, "y": 5 },
+    "sprite": { "key": "watering_can_item", "frame": 0 },
+    "interaction": "vine_pull",
+    "customClass": "CliffWateringCan"
+  },
+  {
+    "id": "burning_vine_1",
+    "kind": "blocker",
+    "pos": { "x": 6, "y": 8 },
+    "sprite": { "key": "burning_vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  }
+]

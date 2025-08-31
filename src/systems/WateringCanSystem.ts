@@ -87,6 +87,10 @@ export class WateringCanSystem {
     this.hintText?.setVisible(visible);
   }
 
+  private setWaterUIVisible(visible: boolean): void {
+    this.waterUI?.setVisible(visible);
+  }
+
   private createWaterEntity(): void {
     if (this.waterEntity) return;
 
@@ -219,6 +223,14 @@ export class WateringCanSystem {
   }
 
   public update(deltaMs: number): void {
+    // 능력이 해금되었는지 확인
+    const isUnlocked = this.gvm.get('ability_watering_can_unlocked') === true;
+    if (!isUnlocked) {
+      this.setHintVisible(false);
+      this.setWaterUIVisible(false);
+      return;
+    }
+    
     const isNearWater = this.isNearWaterTile();
     
     // 힌트 표시 조건 및 텍스트 업데이트
