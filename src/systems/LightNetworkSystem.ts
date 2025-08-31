@@ -279,30 +279,39 @@ export class LightNetworkSystem {
 
     /** 꽃 트리거 (레이저 직접 반응 X, wires 전파 도달 시만) */
     private triggerFlowers(): void {
-        const toTrigger: TileXY[] = [];
+        // 1) 와이어에 닿은 '씨앗' 타일만 먼저 찾기
+        const seeds: TileXY[] = [];
         for (const t of this.deviceTiles.values()) {
             const x = ensureNumber(t.x, 'flower.x');
             const y = ensureNumber(t.y, 'flower.y');
             const adj = [ this.k(x+1,y), this.k(x-1,y), this.k(x,y+1), this.k(x,y-1) ];
-            if (adj.some(a => this.reachableWireSet.has(a))) toTrigger.push({ x, y });
+            if (adj.some(a => this.reachableWireSet.has(a))) {
+                seeds.push({ x, y });
+            }
         }
 
-        for (const t of toTrigger) {
-            const cx = (t.x + 0.5) * this.tileSize;
-            const cy = (t.y + 0.5) * this.tileSize;
+        // 2) 씨앗 타일마다 'flowers_off'에 연속으로 붙어있는 덩어리를 flood fill로 전부 모아서 지운다
+        const visited = new Set<string>();
+        for (const s of seeds) {
+            const group = this.collectContiguousFlowers(s.x, s.y, visited);
+            for (const g of group) {
+                const cx = (g.x + 0.5) * this.tileSize;
+                const cy = (g.y + 0.5) * this.tileSize;
 
-            // 짧은 발광 효과
-            const glow = this.scene.add.circle(cx, cy, this.tileSize * 0.45, 0xffffff, 0.95);
-            glow.setBlendMode(Phaser.BlendModes.ADD).setDepth(1260);
-            this.overlay.add(glow);
-            this.scene.tweens.add({
-                targets: glow, alpha: 0, duration: 380, onComplete: () => glow.destroy()
-            });
+                // (이펙트는 기존과 동일)
+                const glow = this.scene.add.circle(cx, cy, this.tileSize * 0.45, 0xffffff, 0.95);
+                glow.setBlendMode(Phaser.BlendModes.ADD).setDepth(1260);
+                this.overlay.add(glow);
+                this.scene.tweens.add({
+                    targets: glow, alpha: 0, duration: 380, onComplete: () => glow.destroy()
+                });
 
-            // 핵심: flowers_off 해당 타일만 숨김 → 아래 flowers_on이 드러남
-            this.hideTileFromLayer(this.flowersOffLayerName, t.x, t.y);
+                // 핵심: 덩어리 전체를 숨김 (아래 flowers_on이 드러남)
+                this.hideTileFromLayer(this.flowersOffLayerName, g.x, g.y);
+            }
         }
     }
+
 
     /** 레이어 전체 가시성 토글: TilemapLayer 우선 탐색 */
     private setLayerVisible(layerName: string, visible: boolean): void {
@@ -342,17 +351,64 @@ export class LightNetworkSystem {
 
     /** 해당 레이어의 (x,y) 타일을 지워서 아래 on 타일이 드러나게 함 */
     private hideTileFromLayer(layerName: string, x: number, y: number): void {
+        let done = false;
         const ml: any = MapLoader as any;
         const mapKey = `map:${this.mapId}`;
 
         // 1) MapLoader에 개별 타일 토글 API가 있으면 우선 사용
         if (ml && typeof ml.setTileVisible === 'function') {
             ml.setTileVisible(this.scene, mapKey, layerName, x, y, false);
+            this.removeColliderAt(layerName, x, y); // ★ 충돌 제거 추가
             return;
         }
 
-        // 2) 씬의 TilemapLayer를 찾아 타일 제거
-        let done = false;
+        // 2) Spritefusion(Container) 레이어 처리
+        {
+            let found = false;
+            const centerX = x * this.tileSize + this.tileSize / 2;
+            const centerY = y * this.tileSize + this.tileSize / 2;
+            const targetName = `${layerName}:${x},${y}`;
+
+            (this.scene.children.list as any[]).forEach((obj: any) => {
+                if (found) return;
+
+                // 레이어 컨테이너 이름으로 매칭
+                if (obj && obj.type === 'Container' && (obj.name === layerName)) {
+                    const list = (obj.list || []) as any[];
+
+                    for (const child of list) {
+                        // 1) 이름으로 정확 매칭
+                        if (child?.name === targetName) {
+                            if (typeof child.destroy === 'function') child.destroy();
+                            else if (typeof child.setVisible === 'function') child.setVisible(false);
+                            found = true;
+                            break;
+                        }
+
+                        // 2) 좌표로 근사 매칭 (혹시 name이 비어있는 경우 대비)
+                        const cx = child?.x, cy = child?.y;
+                        if (typeof cx === 'number' && typeof cy === 'number') {
+                            if (Math.abs(cx - centerX) < 0.5 && Math.abs(cy - centerY) < 0.5) {
+                                if (typeof child.destroy === 'function') child.destroy();
+                                else if (typeof child.setVisible === 'function') child.setVisible(false);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (found) {
+                done = true;
+                this.removeColliderAt(layerName, x, y); // ★ 충돌 제거 추가
+                return;
+            }
+
+        }
+
+
+        // 3) 씬의 TilemapLayer를 찾아 타일 제거
         (this.scene.children.list as any[]).forEach((obj: any) => {
             const lname: string | undefined =
                 obj?.layer?.name ?? obj?.tilemapLayer?.layer?.name ?? obj?.name;
@@ -371,12 +427,14 @@ export class LightNetworkSystem {
                     if (typeof obj.removeTileAt === 'function') {
                         obj.removeTileAt(x, y, true); // re-calc faces
                         done = true;
+                        this.removeColliderAt(layerName, x, y); // ★ 충돌 제거 추가
                         return;
                     }
                     // 방법 2) 인덱스를 -1로 바꿔 비우기
                     if (typeof obj.putTileAt === 'function') {
                         obj.putTileAt(-1, x, y);
                         done = true;
+                        this.removeColliderAt(layerName, x, y); // ★ 충돌 제거 추가
                         return;
                     }
                     // 방법 3) 마지막 수단: 투명도 0 (성능/지형충돌 고려시 비추천)
@@ -384,14 +442,60 @@ export class LightNetworkSystem {
                         tile.setAlpha(0);
                         done = true;
                         return;
+                    }
                 }
             }
-        }
-    });
+        });
 
-    if (!done) {
-        console.warn(`[LightNetworkSystem] Could not hide tile (${x},${y}) on "${layerName}"`);
+        if (!done) {
+            console.warn(`[LightNetworkSystem] Could not hide tile (${x},${y}) on "${layerName}"`);
+        }
     }
+
+    /** flowers_off 레이어에서 시작점과 '연결된' 모든 타일을 수집 (4방향 연결) */
+    private collectContiguousFlowers(startX: number, startY: number, visited: Set<string>): TileXY[] {
+    const res: TileXY[] = [];
+    const q: TileXY[] = [{ x: startX, y: startY }];
+
+    while (q.length) {
+        const { x, y } = q.shift()!;
+        const key = this.k(x, y);
+        if (visited.has(key)) continue;
+
+        // 이 타일이 현재 flowers_off에 실제로 존재하는지 확인
+        if (!this.deviceTiles.has(key)) continue;
+
+        visited.add(key);
+        res.push({ x, y });
+
+        // 4방향 확장
+        q.push({ x: x + 1, y });
+        q.push({ x: x - 1, y });
+        q.push({ x, y: y + 1 });
+        q.push({ x, y: y - 1 });
+    }
+    return res;
+    }
+
+    /** 해당 레이어의 (x,y) 충돌 바디가 있으면 제거 */
+    private removeColliderAt(layerName: string, x: number, y: number): void {
+        const target = `collider:${layerName}:${x},${y}`;
+
+        // 1) 이름으로 정밀 매칭 (MapCollisionManager에서 붙인 name)
+        (this.scene.children.list as any[]).forEach((obj: any) => {
+            if (obj?.name === target && typeof obj.destroy === 'function') {
+                obj.destroy();
+            }
+        });
+
+        // 2) 혹시 name이 비어있을 가능성 대비(안전망): data로 재확인
+        (this.scene.children.list as any[]).forEach((obj: any) => {
+            const ln = obj?.getData?.('layer');
+            const d  = obj?.getData?.('tileXY');
+            if (ln === layerName && d && d.x === x && d.y === y && typeof obj.destroy === 'function') {
+                obj.destroy();
+            }
+        });
     }
 
 

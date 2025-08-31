@@ -28,6 +28,7 @@ export class MapRenderer {
 
     map.layers.forEach((layer, index) => {
       const container = this.scene.add.container(0, 0);
+      container.name = layer.name; // ★ 레이어 식별자 부여 (Spritefusion)
       const depth = (layerDepths && layerDepths[layer.name] !== undefined)
         ? (layerDepths[layer.name] as number)
         : this.depthForLayer(layer.name, index);
@@ -43,6 +44,8 @@ export class MapRenderer {
           frameIndex
         );
         img.setOrigin(0.5);
+        img.name = `${layer.name}:${t.x},${t.y}`; // ★ 개별 타일 식별자
+        img.setData('tileXY', { x: t.x, y: t.y }); // (선택) 좌표 메타
         images.push(img);
         container.add(img);
       }
