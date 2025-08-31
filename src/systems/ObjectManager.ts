@@ -6,6 +6,8 @@ import { HazardObject } from '../entities/objects/HazardObject';
 import { BlockerObject } from '../entities/objects/BlockerObject';
 import { MovableObject } from '../entities/objects/MovableObject';
 import { InteractiveObject } from '../entities/objects/InteractiveObject';
+import { CliffWateringCan } from '../entities/objects/CliffWateringCan';
+import { BurningVine } from '../entities/objects/BurningVine';
 import { SaveManager } from './SaveManager';
 
 export class ObjectManager {
@@ -97,6 +99,21 @@ export class ObjectManager {
   }
 
   private createObject(def: ObjectDef): WorldObject {
+    // 커스텀 클래스 체크
+    const customClass = (def as any).customClass;
+    if (customClass) {
+      const x = def.pos.x * this.tileSize;
+      const y = def.pos.y * this.tileSize;
+      
+      switch (customClass) {
+        case 'CliffWateringCan':
+          return new CliffWateringCan(this.scene, x, y);
+        case 'BurningVine':
+          return new BurningVine(this.scene, x, y);
+      }
+    }
+    
+    // 기본 클래스
     switch (def.kind as ObjectKind) {
       case 'hazard':
         return new HazardObject(this.scene, def as any, this.tileSize, this.actionRunner);

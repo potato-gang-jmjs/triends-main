@@ -1,8 +1,14 @@
 [
   {
     "id": "to_water_channel_1",
-    "area": { "x": 13, "y": 17, "width": 4, "height": 3 },
-    "target": { "mapId": "water-channel-1", "spawn": { "x": 7, "y": 2 } },
+    "area": { "x": 56, "y": 3, "width": 4, "height": 3 },
+    "target": { "mapId": "water-channel-1", "spawn": { "x": 28, "y": 4 } },
+    "options": { "fadeMs": 400 }
+  },
+  {
+    "id": "back_to_main",
+    "area": { "x": 56, "y": 48, "width": 3, "height": 3 },
+    "target": { "mapId": "main", "spawn": { "x": 2, "y": 2 } },
     "options": { "fadeMs": 400 }
   }
 ]

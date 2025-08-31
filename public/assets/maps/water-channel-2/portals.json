@@ -1,14 +1,14 @@
 [
   {
     "id": "to_water_channel_1",
-    "area": { "x": 0, "y": 0, "width": 4, "height": 2 },
-    "target": { "mapId": "water-channel-1", "spawn": { "x": 13, "y": 6 } },
+    "area": { "x": 5, "y": 0, "width": 4, "height": 2 },
+    "target": { "mapId": "water-channel-1", "spawn": { "x": 15, "y": 16 } },
     "options": { "fadeMs": 400 }
   },
   {
     "id": "to_water_boss",
-    "area": { "x": 17, "y": 13, "width": 3, "height": 2 },
-    "target": { "mapId": "water-boss", "spawn": { "x": 6, "y": 2 } },
+    "area": { "x": 12, "y": 7, "width": 3, "height": 3 },
+    "target": { "mapId": "water-boss", "spawn": { "x": 2, "y": 2 } },
     "options": { "fadeMs": 400 }
   }
 ]

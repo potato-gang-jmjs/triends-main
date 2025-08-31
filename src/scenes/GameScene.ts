@@ -16,6 +16,7 @@ import { ObjectManager } from '../systems/ObjectManager';
 import { ActionProcessor } from '../systems/ActionProcessor';
 import { MirrorSystem } from '../systems/MirrorSystem';
 import { LightNetworkSystem } from '../systems/LightNetworkSystem';
+import { AbilityUnlockSystem } from '../systems/AbilityUnlockSystem';
 
 
 export class GameScene extends Phaser.Scene {
@@ -40,6 +41,8 @@ export class GameScene extends Phaser.Scene {
   private vineSystem!: VineExtensionSystem;
   private wateringSystem!: WateringCanSystem;
   private mirrorSystem!: MirrorSystem;
+  private abilityUnlockSystem!: AbilityUnlockSystem;
+  private actionProcessor!: ActionProcessor;
   private playerInvulUntil = 0; 
   private playerFlickerTween?: Phaser.Tweens.Tween;
   private portalRequiresBothPlayers = false; 
@@ -410,6 +413,15 @@ export class GameScene extends Phaser.Scene {
     
     // 거울 시스템 생성 (P1 전용)
     this.mirrorSystem = new MirrorSystem(this, this.player);
+
+    // 능력 해금 시스템 생성
+    this.abilityUnlockSystem = new AbilityUnlockSystem(this);
+    
+    // ActionProcessor 생성 및 능력 시스템 연결
+    this.actionProcessor = new ActionProcessor(this.player, this.abilityUnlockSystem);
+    
+    // DialogueManager에 ActionProcessor 연결
+    this.dialogueManager.setActionProcessor(this.actionProcessor);
 
     // 대화 시스템 이벤트 연결
     this.setupDialogueEvents();
