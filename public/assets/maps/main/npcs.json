@@ -4,6 +4,6 @@
   { "npcId": "villager_001", "pos": { "x": 8, "y": 10 }, "overrides": { "dialogueId": "villager" } },
   { "npcId": "alien_001", "pos": { "x": 40, "y": 43 } },
   { "npcId": "alien_002", "pos": { "x": 46, "y": 6 } },
-  { "npcId": "alien_003", "pos": { "x": 28, "y": 59 } }
+  { "npcId": "alien_003", "pos": { "x": 24, "y": 59 } }
 ]
 

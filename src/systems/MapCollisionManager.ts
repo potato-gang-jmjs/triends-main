@@ -72,6 +72,10 @@ export class MapCollisionManager {
         img.setVisible(this.debugVisible);
         img.setAlpha(this.debugVisible ? 0.3 : 1);
         img.setDisplaySize(colliderWidth, colliderHeight);
+        // 충돌 오브젝트 식별자 부여
+        img.name = `collider:${layer.name}:${t.x},${t.y}`;
+        img.setData('layer', layer.name);
+        img.setData('tileXY', { x: t.x, y: t.y });
         const body = img.body as Phaser.Physics.Arcade.StaticBody;
         body.setSize(colliderWidth, colliderHeight);
         body.updateFromGameObject();

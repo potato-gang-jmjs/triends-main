@@ -15,6 +15,7 @@ import { WateringCanSystem } from '../systems/WateringCanSystem';
 import { ObjectManager } from '../systems/ObjectManager';
 import { ActionProcessor } from '../systems/ActionProcessor';
 import { MirrorSystem } from '../systems/MirrorSystem';
+import { LightNetworkSystem } from '../systems/LightNetworkSystem';
 import { AbilityUnlockSystem } from '../systems/AbilityUnlockSystem';
 
 
@@ -45,6 +46,8 @@ export class GameScene extends Phaser.Scene {
   private playerInvulUntil = 0; 
   private playerFlickerTween?: Phaser.Tweens.Tween;
   private portalRequiresBothPlayers = false; 
+  private lightSystem?: LightNetworkSystem;
+
 
   // 하트 UI
   private heartsTextP1!: Phaser.GameObjects.Text;
@@ -125,6 +128,7 @@ export class GameScene extends Phaser.Scene {
       this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
       await this.objectManager.load('main', tilesKey, tileSize);
       this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
+      await this.setupLightGimmickForCurrentMap('main');
     });
 
     // 우주인 애니메이션 등록
@@ -834,7 +838,7 @@ export class GameScene extends Phaser.Scene {
     laser.setOrigin(0.5, 0.5);
 
     // 수명
-    this.time.delayedCall(800, () => {
+    this.time.delayedCall(1000, () => {
       if (laser.active) laser.destroy();
     });
 
@@ -1107,6 +1111,7 @@ export class GameScene extends Phaser.Scene {
           this.objectManager = new ObjectManager(this, new ActionProcessor(this.player));
           await this.objectManager.load(nextMapId, tilesKey2, tileSize2);
           this.objectManager.attachPlayers([this.player.sprite, this.player2.sprite]);
+          await this.setupLightGimmickForCurrentMap(nextMapId);
 
           this.cameras.main.startFollow(this.player.sprite);
 
@@ -1406,6 +1411,45 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Light Village gimmick wiring:
+   * - If mapId === 'light-village': set up lamp sensor + wire propagation.
+   * - Also robustly load misnamed portals file 'protals.json' to enable return portal.
+   */
+  private async setupLightGimmickForCurrentMap(mapId: string): Promise<void> {
+    // 이전 맵의 시스템 정리
+    this.lightSystem?.destroy();
+    this.lightSystem = undefined;
 
+    if (mapId !== 'light-village' && mapId !== 'light-village-2') {
+      return;
+    }
+
+    // (A) light-village 포탈 JSON 로드: portals.json → 실패 시 protals.json
+    try {
+      const pm = this.mapManager.getPortalManager();
+      const p1 = await fetch(`assets/maps/${mapId}/portals.json`, { cache: 'no-cache' });
+      if (p1.ok) {
+        const arr = await p1.json();
+        (pm as any).setPortals(arr);
+      } else {
+        const p2 = await fetch(`assets/maps/${mapId}/protals.json`, { cache: 'no-cache' });
+        if (p2.ok) {
+          const arr = await p2.json();
+          (pm as any).setPortals(arr);
+        } else {
+          console.warn('[GameScene] No portals found for light-village (checked portals.json, protals.json).');
+        }
+      }
+    } catch (e) {
+      console.warn('[GameScene] Failed to load light-village portals:', e);
+    }
+
+    // (B) 램프·와이어 기믹 시스템 가동 + 레이저 overlap 연결
+    const tilesKey = this.mapManager.getTilesTextureKey();
+    const tileSize = this.mapManager.getTileSize();
+    this.lightSystem = new LightNetworkSystem(this, mapId, tilesKey, tileSize);
+    this.lightSystem.attachLaserGroup(this.sunflowerLasers);
+  }
 
 } 
