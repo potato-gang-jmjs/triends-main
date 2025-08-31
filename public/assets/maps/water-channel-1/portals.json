@@ -2,13 +2,13 @@
   {
     "id": "to_water_village",
     "area": { "x": 5, "y": 0, "width": 4, "height": 2 },
-    "target": { "mapId": "water-village", "spawn": { "x": 15, "y": 16 } },
+    "target": { "mapId": "water-village", "spawn": { "x": 24, "y": 24 } },
     "options": { "fadeMs": 400 }
   },
   {
     "id": "to_water_channel_2",
     "area": { "x": 12, "y": 7, "width": 3, "height": 3 },
-    "target": { "mapId": "water-channel-2", "spawn": { "x": 2, "y": 2 } },
+    "target": { "mapId": "water-channel-2", "spawn": { "x": 15, "y": 40 } },
     "options": { "fadeMs": 400 }
   }
 ]

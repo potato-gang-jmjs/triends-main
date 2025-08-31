@@ -13,6 +13,6 @@ export const NPC_DEFINITIONS: Record<string, NPCDefinition> = {
   child_water_002: { npcId: 'child_water_002', dialogueId: 'child-water', spriteKey: 'blue' },
   child_water_trapped_001: { npcId: 'child_water_trapped_001', dialogueId: 'child-water-trapped', spriteKey: 'blue' },
   guard_water_001: { npcId: 'guard_water_001', dialogueId: 'guard-water', spriteKey: 'guard' },
-  whale_sprout_001: { npcId: 'whale_sprout_001', dialogueId: 'whale-sprout', spriteKey: 'merchant' }
+  whale_sprout_001: { npcId: 'whale_sprout_001', dialogueId: 'whale-sprout', spriteKey: 'whale' }
 };
 

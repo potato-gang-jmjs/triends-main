@@ -84,6 +84,9 @@ export class PreloadScene extends Phaser.Scene {
       frameHeight: 96
     });
 
+    // ───── NPC: 고래뿌리개(단일 이미지) ─────
+    this.load.image('whale', 'assets/npcs/whale.png');
+
     // 오브젝트 전용 스프라이트시트(예: 16x16)를 별도 키로 로드 (오브젝트는 스케일로 확대 표시)
     // 현재는 main 맵 폴더의 보조 시트를 사용(spritesheet[2].png)
     this.load.spritesheet('obj16', 'assets/maps/main/spritesheet[2].png', {
