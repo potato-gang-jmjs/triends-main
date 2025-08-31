@@ -201,7 +201,7 @@ export class MapManager {
 
     let foundWater = false;
     for (const [dx, dy] of directions) {
-      if (isWaterAt(tx + dx, ty + dy)) {
+      if (dx !== undefined && dy !== undefined && isWaterAt(tx + dx, ty + dy)) {
         foundWater = true;
         break;
       }
@@ -212,10 +212,12 @@ export class MapManager {
       
       // 주변 타일들도 체크
       for (const [dx, dy] of directions) {
-        const checkX = tx + dx;
-        const checkY = ty + dy;
-        const hasWater = isWaterAt(checkX, checkY);
-        if (hasWater) {
+        if (dx !== undefined && dy !== undefined) {
+          const checkX = tx + dx;
+          const checkY = ty + dy;
+          const hasWater = isWaterAt(checkX, checkY);
+          if (hasWater) {
+          }
         }
       }
     }

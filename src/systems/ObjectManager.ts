@@ -15,7 +15,7 @@ export class ObjectManager {
   private objects: Map<string, WorldObject> = new Map();
   private container!: Phaser.GameObjects.Container;
   private actionRunner: ActionProcessor;
-  private tileSize = 64;
+  // private tileSize = 64; // 사용되지 않음
   private tilesTextureKey = 'tiles';
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private mapId: string = '';
@@ -29,7 +29,7 @@ export class ObjectManager {
   public async load(mapId: string, tilesTextureKey: string, tileSize: number): Promise<void> {
     this.unload();
     this.mapId = mapId;
-    this.tileSize = tileSize;
+    // this.tileSize = tileSize; // 사용되지 않음
     this.tilesTextureKey = tilesTextureKey;
     this.container = this.scene.add.container(0, 0);
     this.container.setDepth(900); // ensure above most map layers

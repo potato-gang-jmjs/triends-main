@@ -1,7 +1,8 @@
 // src/systems/LightNetworkSystem.ts
 import Phaser from 'phaser';
 import { MapLoader } from './MapLoader';
-import { MapData, MapLayer, MapTile } from '../types/MapTypes';
+import { MapData, MapTile } from '../types/MapTypes';
+// import { MapLayer } from '../types/MapTypes'; // 사용되지 않음
 
 /** 좌표 확정 타입 */
 type TileXY = { x: number; y: number };
@@ -45,13 +46,13 @@ export class LightNetworkSystem {
     private readonly tileSize: number;
     private readonly tilesKey: string;
     private readonly lampsOffLayerName = 'lamps_off';
-    private readonly lampsOnLayerName = 'lamps_on';
+    // private readonly lampsOnLayerName = 'lamps_on'; // 사용되지 않음
     private readonly flowersOffLayerName = 'flowers_off';
-    private readonly flowersOnLayerName = 'flowers_on';
+    // private readonly flowersOnLayerName = 'flowers_on'; // 사용되지 않음
 
     private overlay: Phaser.GameObjects.Container;
     private lampSensorBody?: Phaser.Physics.Arcade.Image;
-    private activated = false;
+    // private activated = false; // 사용되지 않음
 
 
     /** wires 좌표 집합 ("x,y") */
@@ -108,7 +109,7 @@ export class LightNetworkSystem {
         this.deviceTiles.clear();
         this.lampTiles.clear();
         this.reachableWireSet.clear();
-        this.activated = false;
+        // this.activated = false; // 사용되지 않음
     }
 
     /** 램프 클러스터별로 레이저 overlap 연결 */
@@ -189,38 +190,38 @@ export class LightNetworkSystem {
 
 
     /** 램프 둘레에서 시작해서 wires 위로 BFS → 도달 집합 계산 */
-    private computeReachableWires(): void {
-        this.reachableWireSet.clear();
+    // private computeReachableWires(): void {
+    //     this.reachableWireSet.clear();
 
-        const starts: string[] = [];
-        const seen = new Set<string>();
+    //     const starts: string[] = [];
+    //     const seen = new Set<string>();
 
-        for (const key of this.lampTiles) {
-            const { x, y } = parseKeyToXY(key);
-            const adj = [ this.k(x+1,y), this.k(x-1,y), this.k(x,y+1), this.k(x,y-1) ];
-            for (const a of adj) {
-                if (this.wiresSet.has(a) && !seen.has(a)) {
-                    seen.add(a);
-                    starts.push(a);
-                }
-            }
-        }
+    //     for (const key of this.lampTiles) {
+    //         const { x, y } = parseKeyToXY(key);
+    //         const adj = [ this.k(x+1,y), this.k(x-1,y), this.k(x,y+1), this.k(x,y-1) ];
+    //         for (const a of adj) {
+    //             if (this.wiresSet.has(a) && !seen.has(a)) {
+    //                 seen.add(a);
+    //                 starts.push(a);
+    //             }
+    //         }
+    //     }
 
-        const visited = new Set<string>(starts);
-        const q = [...starts];
-        while (q.length) {
-            const cur = q.shift()!;
-            this.reachableWireSet.add(cur);
-            const { x: cx, y: cy } = parseKeyToXY(cur);
-            const nb = [ this.k(cx+1,cy), this.k(cx-1,cy), this.k(cx,cy+1), this.k(cx,cy-1) ];
-            for (const nk of nb) {
-                if (this.wiresSet.has(nk) && !visited.has(nk)) {
-                    visited.add(nk);
-                    q.push(nk);
-                }
-            }
-        }
-    }
+    //     const visited = new Set<string>(starts);
+    //     const q = [...starts];
+    //     while (q.length) {
+    //         const cur = q.shift()!;
+    //         this.reachableWireSet.add(cur);
+    //         const { x: cx, y: cy } = parseKeyToXY(cur);
+    //         const nb = [ this.k(cx+1,cy), this.k(cx-1,cy), this.k(cx,cy+1), this.k(cx,cy-1) ];
+    //         for (const nk of nb) {
+    //             if (this.wiresSet.has(nk) && !visited.has(nk)) {
+    //                 visited.add(nk);
+    //                 q.push(nk);
+    //             }
+    //         }
+    //     }
+    // }
 
         /** lamps_off 타일 집합을 4방향 인접 기준으로 클러스터화하고,
      *  각 클러스터에 대해 센서(physics body)와 도달 가능 wire 집합을 계산한다. */
@@ -396,7 +397,7 @@ export class LightNetworkSystem {
 
     /** 다중 램프 동시(Δt ≤ 0.5s) 점등 판정 후, 조건을 만족하는 꽃 그룹만 제거 */
     private tryTriggerMultiLampFlowers(): void {
-        const now = this.scene.time.now;
+        // const now = this.scene.time.now; // 사용되지 않음
 
         for (const g of this.flowerGroups) {
             if (g.cleared) continue;
@@ -449,138 +450,138 @@ export class LightNetworkSystem {
 
 
     /** 점등 → 와이어 파동 → 꽃 트리거 */
-    private propagateAndTrigger(): void {
-        // 램프 점등: off 레이어를 끄면 on 레이어가 드러남
-        this.setLayerVisible(this.lampsOffLayerName, false);
-        this.flashLamp();
-        this.rippleAlongWires(() => this.triggerFlowers());
-    }
+    // private propagateAndTrigger(): void {
+    //     // 램프 점등: off 레이어를 끄면 on 레이어가 드러남
+    //     // this.setLayerVisible(this.lampsOffLayerName, false);
+    //     // this.flashLamp();
+    //     // this.rippleAlongWires(() => this.triggerFlowers());
+    // }
 
-    private flashLamp(): void {
-        if (this.lampTiles.size === 0) return;
+    // private flashLamp(): void {
+    //     if (this.lampTiles.size === 0) return;
 
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const key of this.lampTiles) {
-            const { x, y } = parseKeyToXY(key);
-            if (x < minX) minX = x; if (y < minY) minY = y;
-            if (x > maxX) maxX = x; if (y > maxY) maxY = y;
-        }
+    //     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    //     for (const key of this.lampTiles) {
+    //         const { x, y } = parseKeyToXY(key);
+    //         if (x < minX) minX = x; if (y < minY) minY = y;
+    //         if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+    //     }
 
-        const x = (minX + maxX + 1) * 0.5 * this.tileSize;
-        const y = (minY + maxY + 1) * 0.5 * this.tileSize;
-        const r = Math.max(maxX - minX + 1, maxY - minY + 1) * this.tileSize * 0.6;
+    //     const x = (minX + maxX + 1) * 0.5 * this.tileSize;
+    //     const y = (minY + maxY + 1) * 0.5 * this.tileSize;
+    //     const r = Math.max(maxX - minX + 1, maxY - minY + 1) * this.tileSize * 0.6;
 
-        const circ = this.scene.add.circle(x, y, r, 0xffffaa, 0.6);
-        circ.setBlendMode(Phaser.BlendModes.ADD).setDepth(1250);
-        this.overlay.add(circ);
-        this.scene.tweens.add({
-            targets: circ, alpha: 0, scale: 1.3, duration: 300,
-            onComplete: () => circ.destroy()
-        });
-    }
+    //     const circ = this.scene.add.circle(x, y, r, 0xffffaa, 0.6);
+    //     circ.setBlendMode(Phaser.BlendModes.ADD).setDepth(1250);
+    //     this.overlay.add(circ);
+    //     this.scene.tweens.add({
+    //         targets: circ, alpha: 0, scale: 1.3, duration: 300,
+    //         onComplete: () => circ.destroy()
+    //     });
+    // }
 
 
     /** 와이어를 따라 파동 이펙트 */
-    private rippleAlongWires(onComplete: () => void): void {
-        // Set<string> → string[] → TileXY[] (실패 시 throw, 반환 타입 확정)
-        const keys: string[] = Array.from(this.reachableWireSet);
-        let i = 0;
+    // private rippleAlongWires(onComplete: () => void): void {
+    //     // Set<string> → string[] → TileXY[] (실패 시 throw, 반환 타입 확정)
+    //     const keys: string[] = Array.from(this.reachableWireSet);
+    //     let i = 0;
 
-        const step = () => {
-        if (i >= keys.length) { onComplete(); return; }
+    //     const step = () => {
+    //     if (i >= keys.length) { onComplete(); return; }
 
-        const batchKeys = keys.slice(i, i + 12);
-        i += 12;
+    //     const batchKeys = keys.slice(i, i + 12);
+    //     i += 12;
 
-        for (const key of batchKeys) {
-            const { x, y } = parseKeyToXY(key); // ← 여기서 TileXY 확정
-            const cx: number = (x + 0.5) * this.tileSize;
-            const cy: number = (y + 0.5) * this.tileSize;
+    //     for (const key of batchKeys) {
+    //         const { x, y } = parseKeyToXY(key); // ← 여기서 TileXY 확정
+    //         const cx: number = (x + 0.5) * this.tileSize;
+    //         const cy: number = (y + 0.5) * this.tileSize;
 
-            const p = this.scene.add.circle(cx, cy, this.tileSize * 0.35, 0x99ddff, 0.8);
-            p.setBlendMode(Phaser.BlendModes.ADD).setDepth(1230);
-            this.overlay.add(p);
-            this.scene.tweens.add({
-            targets: p, alpha: 0, duration: 220, onComplete: () => p.destroy()
-            });
-        }
+    //         const p = this.scene.add.circle(cx, cy, this.tileSize * 0.35, 0x99ddff, 0.8);
+    //         p.setBlendMode(Phaser.BlendModes.ADD).setDepth(1230);
+    //         this.overlay.add(p);
+    //         this.scene.tweens.add({
+    //         targets: p, alpha: 0, duration: 220, onComplete: () => p.destroy()
+    //         });
+    //     }
 
-        this.scene.time.delayedCall(60, step);
-        };
+    //     this.scene.time.delayedCall(60, step);
+    //     };
 
-        step();
-    }
+    //     step();
+    // }
 
     /** 꽃 트리거 (레이저 직접 반응 X, wires 전파 도달 시만) */
-    private triggerFlowers(): void {
-        // 1) 와이어에 닿은 '씨앗' 타일만 먼저 찾기
-        const seeds: TileXY[] = [];
-        for (const t of this.deviceTiles.values()) {
-            const x = ensureNumber(t.x, 'flower.x');
-            const y = ensureNumber(t.y, 'flower.y');
-            const adj = [ this.k(x+1,y), this.k(x-1,y), this.k(x,y+1), this.k(x,y-1) ];
-            if (adj.some(a => this.reachableWireSet.has(a))) {
-                seeds.push({ x, y });
-            }
-        }
+    // private triggerFlowers(): void {
+    //     // 1) 와이어에 닿은 '씨앗' 타일만 먼저 찾기
+    //     const seeds: TileXY[] = [];
+    //     for (const t of this.deviceTiles.values()) {
+    //         const x = ensureNumber(t.x, 'flower.x');
+    //         const y = ensureNumber(t.y, 'flower.y');
+    //         const adj = [ this.k(x+1,y), this.k(x-1,y), this.k(x,y+1), this.k(x,y-1) ];
+    //         if (adj.some(a => this.reachableWireSet.has(a))) {
+    //             seeds.push({ x, y });
+    //         }
+    //     }
 
-        // 2) 씨앗 타일마다 'flowers_off'에 연속으로 붙어있는 덩어리를 flood fill로 전부 모아서 지운다
-        const visited = new Set<string>();
-        for (const s of seeds) {
-            const group = this.collectContiguousFlowers(s.x, s.y, visited);
-            for (const g of group) {
-                const cx = (g.x + 0.5) * this.tileSize;
-                const cy = (g.y + 0.5) * this.tileSize;
+    //     // 2) 씨앗 타일마다 'flowers_off'에 연속으로 붙어있는 덩어리를 flood fill로 전부 모아서 지운다
+    //     const visited = new Set<string>();
+    //     for (const s of seeds) {
+    //         const group = this.collectContiguousFlowers(s.x, s.y, visited);
+    //         for (const g of group) {
+    //             const cx = (g.x + 0.5) * this.tileSize;
+    //             const cy = (g.y + 0.5) * this.tileSize;
 
-                // (이펙트는 기존과 동일)
-                const glow = this.scene.add.circle(cx, cy, this.tileSize * 0.45, 0xffffff, 0.95);
-                glow.setBlendMode(Phaser.BlendModes.ADD).setDepth(1260);
-                this.overlay.add(glow);
-                this.scene.tweens.add({
-                    targets: glow, alpha: 0, duration: 380, onComplete: () => glow.destroy()
-                });
+    //             // (이펙트는 기존과 동일)
+    //             const glow = this.scene.add.circle(cx, cy, this.tileSize * 0.45, 0xffffff, 0.95);
+    //             glow.setBlendMode(Phaser.BlendModes.ADD).setDepth(1260);
+    //             this.overlay.add(glow);
+    //             this.scene.tweens.add({
+    //                 targets: glow, alpha: 0, duration: 380, onComplete: () => glow.destroy()
+    //             });
 
-                // 핵심: 덩어리 전체를 숨김 (아래 flowers_on이 드러남)
-                this.hideTileFromLayer(this.flowersOffLayerName, g.x, g.y);
-            }
-        }
-    }
+    //             // 핵심: 덩어리 전체를 숨김 (아래 flowers_on이 드러남)
+    //             this.hideTileFromLayer(this.flowersOffLayerName, g.x, g.y);
+    //         }
+    //     }
+    // }
 
 
     /** 레이어 전체 가시성 토글: TilemapLayer 우선 탐색 */
-    private setLayerVisible(layerName: string, visible: boolean): void {
+    // private setLayerVisible(layerName: string, visible: boolean): void {
         // 1) MapLoader API가 있으면 우선 사용
-        const ml: any = MapLoader as any;
-        const mapKey = `map:${this.mapId}`;
-        if (ml && typeof ml.setLayerVisible === 'function') {
-            ml.setLayerVisible(this.scene, mapKey, layerName, visible);
-            return;
-        }
+        // const ml: any = MapLoader as any;
+        // const mapKey = `map:${this.mapId}`;
+        // if (ml && typeof ml.setLayerVisible === 'function') {
+        //     ml.setLayerVisible(this.scene, mapKey, layerName, visible);
+        //     return;
+        // }
 
         // 2) Phaser TilemapLayer 직접 탐색
-        let toggled = false;
-        (this.scene.children.list as any[]).forEach((obj: any) => {
-            // Phaser v3: StaticTilemapLayer/DynamicTilemapLayer 둘 다 layer/name 구조가 있다
-            const lname: string | undefined =
-                obj?.layer?.name ?? obj?.tilemapLayer?.layer?.name ?? obj?.name;
+        // let toggled = false;
+        // (this.scene.children.list as any[]).forEach((obj: any) => {
+        //     // Phaser v3: StaticTilemapLayer/DynamicTilemapLayer 둘 다 layer/name 구조가 있다
+        //     const lname: string | undefined =
+        //         obj?.layer?.name ?? obj?.tilemapLayer?.layer?.name ?? obj?.name;
 
-            const match =
-                lname === layerName ||
-                lname?.endsWith(`:${layerName}`) ||
-                lname === `layer:${this.mapId}:${layerName}` ||
-                lname === `tilelayer:${this.mapId}:${layerName}`;
+        //     const match =
+        //         lname === layerName ||
+        //         lname?.endsWith(`:${layerName}`) ||
+        //         lname === `layer:${this.mapId}:${layerName}` ||
+        //         lname === `tilelayer:${this.mapId}:${layerName}`;
 
-            if (match) {
-                if (typeof obj.setVisible === 'function') obj.setVisible(visible);
-                else if (typeof obj.setAlpha === 'function') obj.setAlpha(visible ? 1 : 0);
-                toggled = true;
-            }
-        });
+        //     if (match) {
+        //         if (typeof obj.setVisible === 'function') obj.setVisible(visible);
+        //         else if (typeof obj.setAlpha === 'function') obj.setAlpha(visible ? 1 : 0);
+        //         toggled = true;
+        //     }
+        // });
 
-        if (!toggled) {
-            console.warn(`[LightNetworkSystem] Could not toggle layer "${layerName}"`);
-        }
-    }
+        // if (!toggled) {
+        //     console.warn(`[LightNetworkSystem] Could not toggle layer "${layerName}"`);
+        // }
+    // }
 
 
     /** 해당 레이어의 (x,y) 타일을 지워서 아래 on 타일이 드러나게 함 */

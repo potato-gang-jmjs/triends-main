@@ -21,6 +21,17 @@ export class PreloadScene extends Phaser.Scene {
     const progressBar = this.add.rectangle(barX, barY, 0, barHeight, 0x88cc88).setOrigin(0, 0.5);
     const percentText = this.add.text(GAME_WIDTH / 2, barY + 40, '0%', { fontSize: '20px', color: '#cccccc' }).setOrigin(0.5);
 
+    // 티저 이미지(배경)를 가장 먼저 로드하여 로딩 중 표시
+    this.load.image('loading_teaser', 'assets/teaser.jpeg');
+    this.load.once('filecomplete-image-loading_teaser', () => {
+      const source = this.textures.get('loading_teaser').getSourceImage() as HTMLImageElement;
+      const teaser = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'loading_teaser')
+        .setOrigin(0.5)
+        .setDepth(-10);
+      const scale = Math.max(GAME_WIDTH / source.width, GAME_HEIGHT / source.height);
+      teaser.setScale(scale);
+    });
+
     this.load.on('progress', (value: number) => {
       progressBar.width = barWidth * value;
       percentText.setText(`${Math.round(value * 100)}%`);
@@ -98,7 +109,6 @@ export class PreloadScene extends Phaser.Scene {
 
     // ───── 비식이: 256x256 ─────
     this.load.image('visigi', 'assets/npcs/visigi.png');
-
 
     // ───── 튜토리얼 오브젝트 에셋 ─────
     this.load.image('watering_can_item', 'assets/characters/watering_can.png');

@@ -232,8 +232,8 @@ export class ActionProcessor {
       return;
     }
 
-    const x = parseInt(coords[0]);
-    const y = parseInt(coords[1]);
+    const x = parseInt(coords[0] || '0');
+    const y = parseInt(coords[1] || '0');
 
     if (isNaN(x) || isNaN(y)) {
       console.error('teleport 좌표 값 오류:', coords);
@@ -241,7 +241,7 @@ export class ActionProcessor {
     }
 
     // 게임 씬에 텔레포트 이벤트 발송
-    this.player.scene.events.emit('teleport', { mapId, x, y });
+    (this.player as any).scene.events.emit('teleport', { mapId, x, y });
     console.log(`텔레포트: ${mapId} (${x}, ${y})`);
   }
 

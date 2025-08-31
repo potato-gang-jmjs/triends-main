@@ -54,39 +54,39 @@ export class BurningVine extends BlockerObject {
     }
   }
 
-  private createFireEffect(): void {
-    // 간단한 화염 효과 (파티클 대신 스프라이트 애니메이션)
-    const visualSprite = (this.sprite as any).linked || this.sprite;
-    if (!visualSprite) return;
+  // private createFireEffect(): void {
+  //   // 간단한 화염 효과 (파티클 대신 스프라이트 애니메이션)
+  //   const visualSprite = (this.sprite as any).linked || this.sprite;
+  //   if (!visualSprite) return;
     
-    this.burnAnimation = this.scene.tweens.add({
-      targets: visualSprite,
-      alpha: { from: 0.7, to: 1 },
-      scaleX: { from: 1.1 / 3, to: 1.3 / 3 },
-      scaleY: { from: 1.1 / 3, to: 1.3 / 3 },
-      duration: 500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-  }
+  //   this.burnAnimation = this.scene.tweens.add({
+  //     targets: visualSprite,
+  //     alpha: { from: 0.7, to: 1 },
+  //     scaleX: { from: 1.1 / 3, to: 1.3 / 3 },
+  //     scaleY: { from: 1.1 / 3, to: 1.3 / 3 },
+  //     duration: 500,
+  //     yoyo: true,
+  //     repeat: -1,
+  //     ease: 'Sine.easeInOut'
+  //   });
+  // }
 
-  private createBurnAnimation(): void {
-    // 붉은색과 주황색 사이를 오가는 효과
-    this.scene.time.addEvent({
-      delay: 200,
-      callback: () => {
-        if (!this.isExtinguished) {
-          const visualSprite = (this.sprite as any).linked || this.sprite;
-          if (visualSprite) {
-            const tint = Phaser.Math.Between(0, 1) === 0 ? 0xff6600 : 0xff3300;
-            visualSprite.setTint(tint);
-          }
-        }
-      },
-      loop: true
-    });
-  }
+  // private createBurnAnimation(): void {
+  //   // 붉은색과 주황색 사이를 오가는 효과
+  //   this.scene.time.addEvent({
+  //     delay: 200,
+  //     callback: () => {
+  //       if (!this.isExtinguished) {
+  //         const visualSprite = (this.sprite as any).linked || this.sprite;
+  //         if (visualSprite) {
+  //           const tint = Phaser.Math.Between(0, 1) === 0 ? 0xff6600 : 0xff3300;
+  //           visualSprite.setTint(tint);
+  //         }
+  //       }
+  //     },
+  //     loop: true
+  //   });
+  // }
 
   public canExtinguishWithWater(): boolean {
     // 물뿌리개로 끌 수 있는지 체크
@@ -138,31 +138,31 @@ export class BurningVine extends BlockerObject {
     }
   }
 
-  private createSmokeEffect(): void {
-    // 간단한 연기 효과
-    for (let i = 0; i < 5; i++) {
-      const smoke = this.scene.add.circle(
-        this.x + Phaser.Math.Between(-20, 20),
-        this.y,
-        Phaser.Math.Between(10, 20),
-        0x888888,
-        0.6
-      );
+  // private createSmokeEffect(): void {
+  //   // 간단한 연기 효과
+  //   for (let i = 0; i < 5; i++) {
+  //     const smoke = this.scene.add.circle(
+  //       this.x + Phaser.Math.Between(-20, 20),
+  //       this.y,
+  //       Phaser.Math.Between(10, 20),
+  //       0x888888,
+  //       0.6
+  //     );
       
-      this.scene.tweens.add({
-        targets: smoke,
-        y: this.y - 50,
-        alpha: 0,
-        scale: 2,
-        duration: 1500,
-        delay: i * 100,
-        ease: 'Power2',
-        onComplete: () => {
-          smoke.destroy();
-        }
-      });
-    }
-  }
+  //     this.scene.tweens.add({
+  //       targets: smoke,
+  //       y: this.y - 50,
+  //       alpha: 0,
+  //       scale: 2,
+  //       duration: 1500,
+  //       delay: i * 100,
+  //       ease: 'Power2',
+  //       onComplete: () => {
+  //         smoke.destroy();
+  //       }
+  //     });
+  //   }
+  // }
 
   private showExtinguishMessage(): void {
     const message = this.scene.add.text(
