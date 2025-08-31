@@ -35,16 +35,59 @@ conversations:
         action: null
 
   quest_accept:
-    text: "고맙네! 저기 마을 남쪽에 수로 입구가 있다네. 조심하게나. 그리고... 행운을 비네."
+    text: "고맙네! 저기 마을 남쪽에 수로 입구가 있다네. 아, 그리고 이걸 가져가게나."
     choices:
-      - text: "다녀오겠습니다"
+      - text: "이게 뭔가요?"
+        next: "give_ability"
+        action: null
+      - text: "감사합니다. 다녀오겠습니다"
+        next: "give_ability_quick"
+        action: null
+
+  give_ability:
+    text: "인삼이는 물의 힘을 빌려 덩굴을 뻗을 수 있다네. 우주인 자네가 물을 공급해주면, 인삼이가 덩굴로 멀리 있는 물건을 끌어올 수 있을 것이네. 수로에서 유용할 거야."
+    action: "unlock_ability:vine_extension;set_flag:vine_ability_unlocked:true"
+    choices:
+      - text: "알겠습니다. 잘 사용하겠습니다"
         next: null
         action: null
+
+  give_ability_quick:
+    text: "인삼이의 덩굴 능력을 해금했네. 물 근처에서 E키를 눌러보게나."
+    action: "unlock_ability:vine_extension;set_flag:vine_ability_unlocked:true"
+    next: null
 
   quest_decline:
     text: "그렇다면... 어쩔 수 없지. 하지만 이대로 두면 마을이 전부 죽어버릴 것이네..."
     choices:
       - text: "죄송합니다"
+        next: null
+        action: null
+
+  quest_in_progress:
+    text: "수로의 괴물을 처치했는가? 아직 물이 돌아오지 않는군..."
+    condition: "flags.water_quest_started == true && flags.water_restored == false"
+    choices:
+      - text: "아직 진행 중입니다"
+        next: null
+        action: null
+      - text: "힌트가 필요합니다"
+        next: "give_hint"
+        action: null
+
+  give_hint:
+    text: "수로 입구의 경비병과 이야기해보게나. 그가 유용한 정보를 줄 것이네."
+    choices:
+      - text: "감사합니다"
+        next: null
+        action: null
+
+  quest_complete:
+    text: "놀라운 일이네! 물이 다시 흐르기 시작했어! 고래뿌리개도 다시 살아났다네. 정말 고맙네!"
+    condition: "flags.water_restored == true"
+    action: "add_stat:gold:100;add_stat:experience:50"
+    choices:
+      - text: "마을을 도울 수 있어서 기쁩니다"
         next: null
         action: null
 

@@ -46,6 +46,10 @@ export class DialogueManager {
     this.scene = _scene;
   }
 
+  public setActionProcessor(processor: ActionProcessor): void {
+    this.actionProcessor = processor;
+  }
+
   // flag: 헬퍼 — key를 string으로 보장하여 TS2538 방지
   private setFlagFromAction(action?: string): void {
     if (!action || !action.startsWith('flag:')) return;

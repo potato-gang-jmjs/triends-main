@@ -2,14 +2,21 @@ import { Player } from '../entities/Player';
 import { SaveManager } from './SaveManager';
 import { GlobalVariableManager } from './GlobalVariableManager';
 import { PlayerStats, Item } from '../types/GameData';
+import { AbilityUnlockSystem } from './AbilityUnlockSystem';
 
 export class ActionProcessor {
   private player: Player;
   private globalManager: GlobalVariableManager;
+  private abilitySystem?: AbilityUnlockSystem;
 
-  constructor(player: Player) {
+  constructor(player: Player, abilitySystem?: AbilityUnlockSystem) {
     this.player = player;
     this.globalManager = GlobalVariableManager.getInstance();
+    this.abilitySystem = abilitySystem;
+  }
+
+  public setAbilitySystem(abilitySystem: AbilityUnlockSystem): void {
+    this.abilitySystem = abilitySystem;
   }
 
   // 액션 문자열을 파싱하고 실행
@@ -55,6 +62,9 @@ export class ActionProcessor {
         break;
       case 'add_global':
         this.handleAddGlobal(parts);
+        break;
+      case 'unlock_ability':
+        this.handleUnlockAbility(parts);
         break;
       default:
         console.warn(`알 수 없는 액션 타입: ${actionType}`);
@@ -185,6 +195,23 @@ export class ActionProcessor {
     }
 
     this.globalManager.add(varName, amount);
+  }
+
+  // 능력 해금 (unlock_ability:watering_can)
+  private handleUnlockAbility(parts: string[]): void {
+    if (parts.length !== 2 || !parts[1]) {
+      console.error('unlock_ability 액션 형식 오류:', parts);
+      return;
+    }
+
+    const abilityId = parts[1];
+    
+    if (!this.abilitySystem) {
+      console.warn('능력 해금 시스템이 초기화되지 않았습니다');
+      return;
+    }
+
+    this.abilitySystem.unlockAbility(abilityId);
   }
 
   // 이벤트 트리거 (trigger_event:level_up)

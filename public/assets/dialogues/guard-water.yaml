@@ -1,13 +1,13 @@
 npc_id: "guard_water"
 conversations:
   introduction:
-    text: "윽... 우린 괴물을 막으려다... 거의 전멸했네... 괴물은... 모든 물을 빨아들여서... 아무것도 할 수 없었어..."
+    text: "윽... 우린 수로를 지키려 했으나... 불타는 덩굴 때문에 더 이상 안쪽으로는 가지 못했네... 부탁이네... 수로를 되찾아주게..."
     choices:
-      - text: "괜찮으세요?"
-        next: "injury_response"
+      - text: "불타는 덩굴이요?"
+        next: "burning_vine_hint"
         action: null
-      - text: "괴물이 어떻게 생겼나요?"
-        next: "monster_description"
+      - text: "물뿌리개가 필요할 것 같네요"
+        next: "watering_can_hint"
         action: null
       - text: "제가 처치하러 가겠습니다"
         next: "volunteer_response"
@@ -72,5 +72,36 @@ conversations:
     text: "그래... 괴물을 처치해야 물이 돌아와... 제발... 성공해줘..."
     choices:
       - text: "반드시 성공하겠습니다"
+        next: null
+        action: null
+
+  burning_vine_hint:
+    text: "마법에 걸린 덩굴이야... 물로만 끌 수 있어. 그런데 물뿌리개가 절벽 너머에 떨어져 있더라고..."
+    choices:
+      - text: "어떻게 가져올 수 있을까요?"
+        next: "retrieve_hint"
+        action: null
+      - text: "인삼이의 덩굴로 가져올 수 있을 것 같아요"
+        next: "vine_solution"
+        action: null
+
+  watering_can_hint:
+    text: "맞아! 저기 절벽 너머에 우주선에서 떨어진 물뿌리개가 있어. 하지만 너무 멀어서 손이 닿지 않아..."
+    choices:
+      - text: "인삼이가 덩굴로 가져올 수 있을 거예요"
+        next: "vine_solution"
+        action: null
+
+  retrieve_hint:
+    text: "글쎄... 뭔가 긴 것으로 끌어올 수 있다면... 아니면 날아갈 수 있다면..."
+    choices:
+      - text: "인삼이의 덩굴을 사용해볼게요"
+        next: "vine_solution"
+        action: null
+
+  vine_solution:
+    text: "그래! 인삼이의 덩굴 능력이라면 가능할 거야! 물 근처에서 E키를 누르면 덩굴을 뻗을 수 있을 거야."
+    choices:
+      - text: "감사합니다!"
         next: null
         action: null
