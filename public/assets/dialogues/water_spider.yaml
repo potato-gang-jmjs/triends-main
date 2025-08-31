@@ -1,38 +1,75 @@
-water_spider:
-  - text: "누구야? 이곳까지 찾아오다니..."
-    speaker: "물거미"
-  - text: "아, 너희들이 물마을의 영웅들이구나."
-    speaker: "물거미"
-  - text: "으음... 사실 나 때문에 물마을에 문제가 생긴 것 같아."
-    speaker: "물거미"
-  - text: "처음엔 그냥 조용한 곳을 찾아 이곳으로 왔었는데..."
-    speaker: "물거미"
-  - text: "내가 거미줄을 너무 많이 쳐서 물길이 막힌 것 같더라고."
-    speaker: "물거미"
-  - text: "물마을 사람들이 고통받고 있다는 걸 알고 있었지만..."
-    speaker: "물거미"
-  - text: "혼자서는 어떻게 해야 할지 몰라서 계속 숨어있었어."
-    speaker: "물거미"
-  - text: "하지만 너희들이 여기까지 와줬으니, 이제 용기를 낼 수 있을 것 같아!"
-    speaker: "물거미"
-  - text: "미안해, 내가 물길을 막고 있었어."
-    speaker: "물거미"
-  - text: "지금 당장 내 거미줄들을 모두 치워서 물길을 정상으로 돌려놓을게!"
-    speaker: "물거미"
-    action:
-      type: "set_flag"
-      flag: "light_water_ended"
-      value: true
-  - text: "우와! 물이 다시 흐르기 시작했어!"
-    speaker: "물거미"
-  - text: "정말 고마워, 너희들 덕분에 물마을이 다시 평화로워질 거야."
-    speaker: "물거미"
-  - text: "나도 이제 물마을 사람들과 친하게 지낼 수 있을 것 같아."
-    speaker: "물거미"
-  - text: "자, 이제 물마을로 돌아가자! 모두가 너희들을 기다리고 있을 거야!"
-    speaker: "물거미"
-    action:
-      type: "teleport"
-      map: "main"
-      x: 400
-      y: 300
+npc_id: "water_spider"
+conversations:
+  introduction:
+    text: "누구야? 이곳까지 찾아오다니... 아, 너희들이 물마을의 영웅들이구나."
+    choices:
+      - text: "물마을에 무슨 일이 있었나요?"
+        next: "problem_explanation"
+        action: null
+      - text: "당신이 물길을 막았다고 들었어요"
+        next: "direct_confrontation"
+        action: null
+
+  problem_explanation:
+    text: "으음... 사실 나 때문에 물마을에 문제가 생긴 것 같아. 처음엔 그냥 조용한 곳을 찾아 이곳으로 왔었는데..."
+    choices:
+      - text: "어떤 문제인가요?"
+        next: "web_problem"
+        action: null
+
+  direct_confrontation:
+    text: "그래... 맞아. 내가 거미줄을 너무 많이 쳐서 물길이 막힌 것 같더라고."
+    choices:
+      - text: "왜 그런 일을 했나요?"
+        next: "web_problem"
+        action: null
+
+  web_problem:
+    text: "물마을 사람들이 고통받고 있다는 걸 알고 있었지만... 혼자서는 어떻게 해야 할지 몰라서 계속 숨어있었어."
+    choices:
+      - text: "이제라도 해결할 수 있어요!"
+        next: "resolution_start"
+        action: null
+      - text: "왜 도움을 요청하지 않았나요?"
+        next: "fear_explanation"
+        action: null
+
+  fear_explanation:
+    text: "마을 사람들이 나를 무서워할까봐... 하지만 너희들이 여기까지 와줬으니, 이제 용기를 낼 수 있을 것 같아!"
+    choices:
+      - text: "함께 해결해봐요"
+        next: "resolution_start"
+        action: null
+
+  resolution_start:
+    text: "미안해, 내가 물길을 막고 있었어. 지금 당장 내 거미줄들을 모두 치워서 물길을 정상으로 돌려놓을게!"
+    action: "set_flag:light_water_ended:true"
+    choices:
+      - text: "정말 고마워요!"
+        next: "water_flowing"
+        action: null
+
+  water_flowing:
+    text: "우와! 물이 다시 흐르기 시작했어! 정말 고마워, 너희들 덕분에 물마을이 다시 평화로워질 거야."
+    choices:
+      - text: "이제 물마을 사람들과 친하게 지낼 수 있겠네요"
+        next: "friendship"
+        action: null
+      - text: "물마을로 돌아가요"
+        next: "return_village"
+        action: null
+
+  friendship:
+    text: "나도 이제 물마을 사람들과 친하게 지낼 수 있을 것 같아. 정말 고마워!"
+    choices:
+      - text: "물마을로 돌아가요"
+        next: "return_village"
+        action: null
+
+  return_village:
+    text: "자, 이제 물마을로 돌아가자! 모두가 너희들을 기다리고 있을 거야!"
+    action: "teleport:main:400,300"
+    choices:
+      - text: "네, 가요!"
+        next: null
+        action: null

@@ -30,6 +30,7 @@ export class DialogueBox {
     // 컨테이너 생성
     this.container = this.scene.add.container(0, 0);
     this.container.setDepth(1000); // 다른 UI보다 위에 표시
+    this.container.setScrollFactor(0); // 카메라 스크롤에 영향받지 않음 (화면 고정)
     this.container.setVisible(false);
 
     // 배경 박스

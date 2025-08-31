@@ -2,7 +2,7 @@
   {
     "id": "cliff_watering_can",
     "kind": "interactive",
-    "pos": { "x":4, "y": 12 },
+    "pos": { "x": 64, "y": 192 },
     "sprite": { "key": "watering_can_item", "frame": 0 },
     "interaction": "vine_pull",
     "customClass": "CliffWateringCan"
@@ -10,7 +10,7 @@
   {
     "id": "burning_vine_1",
     "kind": "blocker",
-    "pos": { "x": 12, "y": 32 },
+    "pos": { "x": 192, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -18,7 +18,7 @@
   {
     "id": "burning_vine_2",
     "kind": "blocker",
-    "pos": { "x": 16, "y": 32 },
+    "pos": { "x": 256, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -26,7 +26,7 @@
   {
     "id": "burning_vine_3",
     "kind": "blocker",
-    "pos": { "x": 20, "y": 32 },
+    "pos": { "x": 320, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -34,7 +34,7 @@
   {
     "id": "burning_vine_4",
     "kind": "blocker",
-    "pos": { "x": 24, "y": 32 },
+    "pos": { "x": 384, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -42,7 +42,7 @@
   {
     "id": "burning_vine_5",
     "kind": "blocker",
-    "pos": { "x": 28, "y": 32 },
+    "pos": { "x": 448, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -50,7 +50,7 @@
   {
     "id": "burning_vine_10",
     "kind": "blocker",
-    "pos": { "x": 44, "y": 32 },
+    "pos": { "x": 704, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -58,7 +58,7 @@
   {
     "id": "burning_vine_6",
     "kind": "blocker",
-    "pos": { "x": 48, "y": 32 },
+    "pos": { "x": 768, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -66,7 +66,7 @@
   {
     "id": "burning_vine_7",
     "kind": "blocker",
-    "pos": { "x": 52, "y": 32 },
+    "pos": { "x": 832, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -74,7 +74,7 @@
   {
     "id": "burning_vine_8",
     "kind": "blocker",
-    "pos": { "x": 56, "y": 32 },
+    "pos": { "x": 896, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
@@ -82,7 +82,7 @@
   {
     "id": "burning_vine_9",
     "kind": "blocker",
-    "pos": { "x": 60, "y": 32 },
+    "pos": { "x": 960, "y": 512 },
     "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"

@@ -33,6 +33,7 @@ export class ObjectManager {
     this.tilesTextureKey = tilesTextureKey;
     this.container = this.scene.add.container(0, 0);
     this.container.setDepth(900); // ensure above most map layers
+    console.log(`ObjectManager: 맵 ${mapId} 로드 시작, tileSize: ${tileSize}`);
 
     // key
     this.spaceKey = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -43,25 +44,41 @@ export class ObjectManager {
       const res = await fetch(`assets/maps/${mapId}/objects.json`, { cache: 'no-cache' });
       if (res.ok) {
         list = await res.json();
+        console.log(`ObjectManager: ${mapId} 맵에서 ${list.length}개의 오브젝트 정의를 로드했습니다.`);
+      } else {
+        console.log(`ObjectManager: ${mapId} 맵의 objects.json을 찾을 수 없습니다.`);
       }
-    } catch {}
+    } catch (error) {
+      console.log(`ObjectManager: ${mapId} 맵의 objects.json 로드 중 오류:`, error);
+    }
 
     // restore state
     const state = (SaveManager.loadGame() as any).objectsState?.[mapId] as ObjectsState | undefined;
 
     for (const def of list) {
       if (!def || !def.id) continue;
+      console.log(`ObjectManager: 오브젝트 생성 시도: ${def.id} (${def.kind})`);
+      console.log(`  - JSON에서 로드된 원본 좌표: (${def.pos.x}, ${def.pos.y})`);
+      
       // restore per object
       const s = state?.[def.id];
-      if (s?.destroyed) continue;
+      if (s?.destroyed) {
+        console.log(`ObjectManager: 오브젝트 ${def.id}는 파괴된 상태로 저장되어 스킵됩니다.`);
+        continue;
+      }
       if (typeof s?.hp === 'number') def.hp = s.hp;
-      if (typeof s?.posX === 'number') def.pos.x = s.posX;
+      if (typeof s?.posX === 'number') {
+        console.log(`  - SaveManager에서 복원된 좌표: (${s.posX}, ${s.posY})`);
+        def.pos.x = s.posX;
+      }
       if (typeof s?.posY === 'number') def.pos.y = s.posY;
 
       const obj = this.createObject(def);
       obj.enablePhysics(this.tilesTextureKey);
       this.objects.set(def.id, obj);
+      console.log(`ObjectManager: 오브젝트 ${def.id} 생성 완료 - 위치: (${def.pos.x}, ${def.pos.y})`);
     }
+    console.log(`ObjectManager: 총 ${this.objects.size}개의 오브젝트가 활성화되었습니다.`);
   }
 
   public attachPlayers(playerSprites: Phaser.Physics.Arcade.Sprite[]): void {
@@ -102,8 +119,8 @@ export class ObjectManager {
     // 커스텀 클래스 체크
     const customClass = (def as any).customClass;
     if (customClass) {
-      const x = def.pos.x * this.tileSize;
-      const y = def.pos.y * this.tileSize;
+      const x = def.pos.x; // 직접 픽셀 좌표 사용
+      const y = def.pos.y; // 직접 픽셀 좌표 사용
       
       switch (customClass) {
         case 'CliffWateringCan':
@@ -113,17 +130,17 @@ export class ObjectManager {
       }
     }
     
-    // 기본 클래스
+    // 기본 클래스 (픽셀 좌표 사용, tileSize는 64로 고정)
     switch (def.kind as ObjectKind) {
       case 'hazard':
-        return new HazardObject(this.scene, def as any, this.tileSize, this.actionRunner);
+        return new HazardObject(this.scene, def as any, 64, this.actionRunner);
       case 'blocker':
-        return new BlockerObject(this.scene, def as any, this.tileSize, this.actionRunner);
+        return new BlockerObject(this.scene, def as any, 64, this.actionRunner);
       case 'movable':
-        return new MovableObject(this.scene, def as any, this.tileSize, this.actionRunner);
+        return new MovableObject(this.scene, def as any, 64, this.actionRunner);
       case 'interactive':
       default:
-        return new InteractiveObject(this.scene, def as any, this.tileSize, this.actionRunner);
+        return new InteractiveObject(this.scene, def as any, 64, this.actionRunner);
     }
   }
 

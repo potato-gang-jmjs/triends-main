@@ -50,6 +50,7 @@ export class MapManager {
     // this.currentMapKey = mapKey;
     this.lastTileSize = data.tileSize;
     this.currentMapData = data;
+    console.log(`MapManager: 맵 로드 완료, tileSize: ${data.tileSize}`);
 
     // 카메라/월드 경계
     const worldWidth = data.tileSize * data.mapWidth;
@@ -208,8 +209,6 @@ export class MapManager {
 
     // 디버그: 물 감지 문제 확인
     if (worldX < 300 || worldX > 800) {
-      console.log(`물 감지 체크: 월드좌표 (${worldX}, ${worldY}) -> 타일좌표 (${tx}, ${ty}), 결과: ${foundWater}`);
-      console.log(`  물 레이어 수: ${waterLayers.length}, 타일셋 크기: ${tileSize}`);
       
       // 주변 타일들도 체크
       for (const [dx, dy] of directions) {
@@ -217,7 +216,6 @@ export class MapManager {
         const checkY = ty + dy;
         const hasWater = isWaterAt(checkX, checkY);
         if (hasWater) {
-          console.log(`  물 타일 발견: (${checkX}, ${checkY})`);
         }
       }
     }

@@ -66,6 +66,9 @@ export class ActionProcessor {
       case 'unlock_ability':
         this.handleUnlockAbility(parts);
         break;
+      case 'teleport':
+        this.handleTeleport(parts);
+        break;
       default:
         console.warn(`알 수 없는 액션 타입: ${actionType}`);
     }
@@ -212,6 +215,34 @@ export class ActionProcessor {
     }
 
     this.abilitySystem.unlockAbility(abilityId);
+  }
+
+  // 텔레포트 (teleport:main:400,300)
+  private handleTeleport(parts: string[]): void {
+    if (parts.length !== 3 || !parts[1] || !parts[2]) {
+      console.error('teleport 액션 형식 오류:', parts);
+      return;
+    }
+
+    const mapId = parts[1];
+    const coords = parts[2].split(',');
+    
+    if (coords.length !== 2) {
+      console.error('teleport 좌표 형식 오류:', parts[2]);
+      return;
+    }
+
+    const x = parseInt(coords[0]);
+    const y = parseInt(coords[1]);
+
+    if (isNaN(x) || isNaN(y)) {
+      console.error('teleport 좌표 값 오류:', coords);
+      return;
+    }
+
+    // 게임 씬에 텔레포트 이벤트 발송
+    this.player.scene.events.emit('teleport', { mapId, x, y });
+    console.log(`텔레포트: ${mapId} (${x}, ${y})`);
   }
 
   // 이벤트 트리거 (trigger_event:level_up)

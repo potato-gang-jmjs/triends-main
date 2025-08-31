@@ -26,10 +26,13 @@ export class NPC {
 
     // NPC 스프라이트 생성 
     this.sprite = scene.physics.add.sprite(x, y, spriteKey, frame);
-    // 96x96 시트(외계 주민)는 원본 크기를 유지하고, 임시 32x32 네모도 깨지지 않게 기본 스케일 1로.
-    this.sprite.setScale(1);
+    // 기본 스케일은 1, 특정 스프라이트는 개별 조정
+    const initialScale = (spriteKey === 'water_spider') ? 1/15 : 1;
+    this.sprite.setScale(initialScale);
 
-    this.sprite.setImmovable(true);
+    // 물거미는 덩굴에 끌려올 수 있도록 movable로 설정
+    const isMovable = (spriteKey === 'water_spider');
+    this.sprite.setImmovable(!isMovable);
     this.sprite.body!.setSize(32, 32); // 충돌 박스 크기
     this.sprite.setDepth(1000);
 

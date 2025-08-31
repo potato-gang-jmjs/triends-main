@@ -248,12 +248,12 @@ export class WateringCanSystem {
         if (this.waterAmount <= 0) {
           // 물이 없으면 자동으로 리필
           this.refillWater();
-          console.log('물 타일에서 물을 다시 채웠습니다!');
+          
         }
         this.state = 'equipped';
         this.player.setWateringCanEquipped(true);
         this.player.setWateringActive(false);
-        console.log('물뿌리개를 장착했습니다. Shift키를 다시 눌러 물뿌리기를 시작하세요.');
+        
       } else if (this.state === 'equipped' && this.waterAmount > 0) {
         // equipped -> watering: 물뿌리기 시작
         this.state = 'watering';
@@ -266,7 +266,7 @@ export class WateringCanSystem {
         if (this.isPlayer2Nearby()) {
           this.activatePlayer2VineAbility();
         }
-        console.log('물뿌리기를 시작합니다!');
+        
       }
     }
 
@@ -279,7 +279,7 @@ export class WateringCanSystem {
         this.destroyWaterEntity();
         this.deactivatePlayer2VineAbility();
         this.state = 'equipped';
-        console.log('물뿌리기를 중지했습니다.');
+        
       }
     }
 
@@ -335,7 +335,7 @@ export class WateringCanSystem {
         this.deactivatePlayer2VineAbility();
         this.state = 'idle';
         this.switchToNormalSprite();
-        console.log('물이 다 떨어져 일반 상태로 돌아갑니다.');
+        
       }
     }
 
@@ -343,7 +343,7 @@ export class WateringCanSystem {
     if (this.state === 'equipped' && !isNearWater && this.waterAmount <= 0) {
       this.state = 'idle';
       this.switchToNormalSprite();
-      console.log('물을 다 써서 물뿌리개를 내려놓습니다.');
+      
     }
 
     this.updateWaterUI();
@@ -353,21 +353,21 @@ export class WateringCanSystem {
     // 물뿌리개를 든 상태로 설정
     this.player.setWateringCanEquipped(true);
     this.player.sprite.setTexture('player_watering');
-    console.log('물뿌리개를 장착했습니다!');
+    
   }
 
   private switchToNormalSprite(): void {
     // 일반 상태로 복구
     this.player.setWateringCanEquipped(false);
     this.player.sprite.setTexture('player');
-    console.log('물뿌리개를 내려놓았습니다.');
+    
   }
 
   // 물 보충 (물 타일에서 자동으로 호출될 수 있음)
   public refillWater(): void {
     this.waterAmount = this.maxWaterAmount;
     this.updateWaterUI();
-    console.log('물을 다시 채웠습니다!');
+    
   }
 
   public getState(): WateringState {
@@ -393,7 +393,7 @@ export class WateringCanSystem {
           if (obj.checkWaterInteraction && obj.checkWaterInteraction(waterX, waterY, 120)) {
             if (obj.canExtinguishWithWater && obj.canExtinguishWithWater()) {
               obj.extinguishWithWater();
-              console.log('덩굴을 물로 제거했습니다!');
+              
             }
           }
         }

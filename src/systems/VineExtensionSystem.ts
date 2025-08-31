@@ -438,29 +438,63 @@ export class VineExtensionSystem {
         }
       }
     });
+    
+    // NPCManager에서 물거미 NPC 찾기
+    const npcManager = (this.scene as any).npcManager;
+    if (!npcManager) return;
+    
+    const npcs = npcManager.getAllNPCs();
+    if (!npcs) return;
+    
+    npcs.forEach((npc: any) => {
+      if (npc.npcId === 'water_spider' && !npc.sprite.body.immovable) {
+        const vineEnd = this.getVineEnd();
+        const distance = Phaser.Math.Distance.Between(vineEnd.x, vineEnd.y, npc.sprite.x, npc.sprite.y);
+        if (distance < 50) {
+          this.hookedObject = npc;
+        }
+      }
+    });
   }
   
   private pullWateringCan(): void {
     if (!this.hookedObject) return;
     
-    // 물뿌리개 스프라이트 가져오기
-    const objSprite = (this.hookedObject.sprite as any).linked || this.hookedObject.sprite;
-    if (!objSprite) return;
-    
-    // 덩굴 끝으로 물뿌리개를 끌어오기 (1P처럼)
+    // 덩굴 끝으로 오브젝트/NPC 끌어오기
     const end = this.getVineEnd();
-    objSprite.setPosition(end.x, end.y);
     
-    // 덩굴이 완전히 수축했을 때 획듍
+    if (this.hookedObject.npcId) {
+      // NPC인 경우 - NPC의 setPosition 메서드 사용 (상호작용 영역도 함께 이동)
+      (this.hookedObject as any).setPosition(end.x, end.y);
+    } else {
+      // 일반 오브젝트인 경우
+      const objSprite = (this.hookedObject.sprite as any).linked || this.hookedObject.sprite;
+      if (objSprite) {
+        objSprite.setPosition(end.x, end.y);
+      }
+    }
+    
+    // 덩굴이 완전히 수축했을 때 획득
     if (this.currentLengthPx <= 10) {
       // 인삼이 위치로 이동
       const ginsengPos = this.getVineStart();
-      objSprite.setPosition(ginsengPos.x, ginsengPos.y);
       
-      // 획듍 처리
+      if (this.hookedObject.npcId) {
+        // NPC인 경우 - NPC의 setPosition 메서드 사용
+        (this.hookedObject as any).setPosition(ginsengPos.x, ginsengPos.y);
+      } else {
+        // 일반 오브젝트인 경우
+        const objSprite = (this.hookedObject.sprite as any).linked || this.hookedObject.sprite;
+        if (objSprite) {
+          objSprite.setPosition(ginsengPos.x, ginsengPos.y);
+        }
+      }
+      
+      // 물뿌리개 오브젝트인 경우만 수집 처리
       if (this.hookedObject.collectWithVine) {
         this.hookedObject.collectWithVine();
       }
+      
       this.hookedObject = null;
     }
   }

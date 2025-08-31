@@ -575,6 +575,16 @@ export class GameScene extends Phaser.Scene {
       if (!mapId || !spawn) return;
       this.performDirectMapTransition(mapId, spawn, fadeMs);
     });
+
+    // === 텔레포트 이벤트 ===
+    this.events.on('teleport', (payload: { mapId: string; x: number; y: number }) => {
+      const { mapId, x, y } = payload;
+      if (!mapId || x === undefined || y === undefined) return;
+      // 타일 좌표로 변환 (픽셀 좌표를 64로 나누기)
+      const tileX = Math.floor(x / 64);
+      const tileY = Math.floor(y / 64);
+      this.performDirectMapTransition(mapId, { x: tileX, y: tileY }, 500);
+    });
   }
 
   private async loadNPCsForMap(mapId: string): Promise<void> {
@@ -1382,10 +1392,8 @@ export class GameScene extends Phaser.Scene {
     
     // 디버그: 플레이어 위치와 물 감지 상태 로깅
     if (nearP1 !== gvm.get('isP1NearWater')) {
-      console.log(`P1 물 감지 변경: ${gvm.get('isP1NearWater')} -> ${nearP1}, 위치: (${this.player.sprite.x}, ${this.player.sprite.y})`);
     }
     if (nearP2 !== gvm.get('isNearWater')) {
-      console.log(`P2 물 감지 변경: ${gvm.get('isNearWater')} -> ${nearP2}, 위치: (${this.player2.sprite.x}, ${this.player2.sprite.y})`);
     }
     
     if (gvm.get('isNearWater') !== nearP2) {
@@ -1427,7 +1435,6 @@ export class GameScene extends Phaser.Scene {
         const gvm = GlobalVariableManager.getInstance();
         gvm.set('ability_watering_can_unlocked', true);
         
-        console.log('1P 물뿌리개 능력이 해금되었습니다!');
       } else if (abilityType === 'vine_extension') {
         // 덩굴 확장 능력 해금
         const gvm = GlobalVariableManager.getInstance();
