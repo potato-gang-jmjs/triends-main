@@ -1,0 +1,9 @@
+[
+  {
+    "id": "to_main_01",
+    "area": { "x": 33, "y": 3, "width": 2, "height": 2 },
+    "target": { "mapId": "main", "spawn": { "x": 30, "y": 61 } },
+    "options": { "fadeMs": 400, "color": 65280 }
+  }
+]
+

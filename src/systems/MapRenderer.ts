@@ -56,6 +56,7 @@ export class MapRenderer {
     if (n.includes('background')) return -100; // always behind
     if (n.includes('back')) return -10;        // e.g., Trees back
     if (n.includes('front')) return 100;       // e.g., Trees front (over player)
+    if (n.includes('wires')) return -10;
     // default: maintain relative order
     return index * 10;
   }

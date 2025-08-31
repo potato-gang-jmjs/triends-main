@@ -10,6 +10,12 @@
     "area": { "x": 14, "y": 1, "width": 4, "height": 2 },
     "target": { "mapId": "water-village", "spawn": { "x": 15, "y": 3 } },
     "options": { "fadeMs": 400, "color": 16711680 }
+  },
+    {
+    "id": "to_light_village_01",
+    "area": { "x": 28, "y": 63, "width": 3, "height": 2 },
+    "target": { "mapId": "light-village", "spawn": { "x": 33, "y": 6 } },
+    "options": { "fadeMs": 400, "color": 39168 }
   }
 ]
 
