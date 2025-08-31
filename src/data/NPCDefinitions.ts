@@ -16,5 +16,7 @@ export const NPC_DEFINITIONS: Record<string, NPCDefinition> = {
   whale_sprout_001: { npcId: 'whale_sprout_001', dialogueId: 'whale-sprout', spriteKey: 'whale', frame: 0 },
   elder_001: { npcId: 'elder_001', dialogueId: 'villager-water', spriteKey: 'water_residents', frame: 2 },
   water_spider: { npcId: 'water_spider', dialogueId: 'water_spider', spriteKey: 'water_spider' }
+  elder_001: { npcId: 'elder_001', dialogueId: 'elder', spriteKey: 'water_residents', frame: 6 },
+  visigi: { npcId: 'visigi', dialogueId: 'visigi', spriteKey: 'visigi' },
 };
 

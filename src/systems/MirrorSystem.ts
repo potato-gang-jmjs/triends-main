@@ -3,8 +3,8 @@ import { Player } from '../entities/Player';
 
 /**
  * MirrorSystem (P1 전용)
- * - Right Ctrl(우Ctrl) 누르면 거울 장착/해제 토글
- * - 장착 중 Numpad0 누르면 현재 방향으로 'astronaut_mirroring' 포즈가 잠깐 표시
+ * - Right Ctrl(우Ctrl) 또는 Right Command(우⌘) 누르면 거울 장착/해제 토글
+ * - 장착 중 Numpad0 또는 Digit0(상단 0) 누르면 현재 방향으로 'astronaut_mirroring' 포즈가 잠깐 표시
  * - 필요한 에셋이 미로딩이면 여기서 자동 로드
  */
 export class MirrorSystem {
@@ -24,10 +24,10 @@ export class MirrorSystem {
 
         // 원시 키 이벤트(KeyboardEvent.code)로 우Ctrl·키패드0 구분
         this.scene.input.keyboard?.on('keydown', (evt: KeyboardEvent) => {
-        if (evt.code === 'ControlRight') {
+        if (evt.code === 'ControlRight' || evt.code === 'MetaRight') {
             if ((evt as any).repeat) return;
             this.setEquipped(!this.equipped);
-        } else if (evt.code === 'Numpad0') {
+        } else if (evt.code === 'Numpad0' || evt.code === 'Digit0') {
             if (!this.equipped) return;
             if ((evt as any).repeat) return;
             this.playMirroringPose();
