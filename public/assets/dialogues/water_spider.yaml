@@ -1,0 +1,38 @@
+water_spider:
+  - text: "누구야? 이곳까지 찾아오다니..."
+    speaker: "물거미"
+  - text: "아, 너희들이 물마을의 영웅들이구나."
+    speaker: "물거미"
+  - text: "으음... 사실 나 때문에 물마을에 문제가 생긴 것 같아."
+    speaker: "물거미"
+  - text: "처음엔 그냥 조용한 곳을 찾아 이곳으로 왔었는데..."
+    speaker: "물거미"
+  - text: "내가 거미줄을 너무 많이 쳐서 물길이 막힌 것 같더라고."
+    speaker: "물거미"
+  - text: "물마을 사람들이 고통받고 있다는 걸 알고 있었지만..."
+    speaker: "물거미"
+  - text: "혼자서는 어떻게 해야 할지 몰라서 계속 숨어있었어."
+    speaker: "물거미"
+  - text: "하지만 너희들이 여기까지 와줬으니, 이제 용기를 낼 수 있을 것 같아!"
+    speaker: "물거미"
+  - text: "미안해, 내가 물길을 막고 있었어."
+    speaker: "물거미"
+  - text: "지금 당장 내 거미줄들을 모두 치워서 물길을 정상으로 돌려놓을게!"
+    speaker: "물거미"
+    action:
+      type: "set_flag"
+      flag: "light_water_ended"
+      value: true
+  - text: "우와! 물이 다시 흐르기 시작했어!"
+    speaker: "물거미"
+  - text: "정말 고마워, 너희들 덕분에 물마을이 다시 평화로워질 거야."
+    speaker: "물거미"
+  - text: "나도 이제 물마을 사람들과 친하게 지낼 수 있을 것 같아."
+    speaker: "물거미"
+  - text: "자, 이제 물마을로 돌아가자! 모두가 너희들을 기다리고 있을 거야!"
+    speaker: "물거미"
+    action:
+      type: "teleport"
+      map: "main"
+      x: 400
+      y: 300

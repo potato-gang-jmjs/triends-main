@@ -422,6 +422,9 @@ export class GameScene extends Phaser.Scene {
     // 대화 시스템 이벤트 연결
     this.setupDialogueEvents();
     
+    // 능력 해금 이벤트 연결
+    this.setupAbilityEvents();
+    
     // NPC들 배치는 맵 로드 완료 후 처리 (.then에서 호출)
     
     // 키보드 입력 설정
@@ -1377,6 +1380,14 @@ export class GameScene extends Phaser.Scene {
     const nearP2 = this.mapManager.isPointAdjacentToWater(this.player2.sprite.x, this.player2.sprite.y);
     const nearP1 = this.mapManager.isPointAdjacentToWater(this.player.sprite.x, this.player.sprite.y);
     
+    // 디버그: 플레이어 위치와 물 감지 상태 로깅
+    if (nearP1 !== gvm.get('isP1NearWater')) {
+      console.log(`P1 물 감지 변경: ${gvm.get('isP1NearWater')} -> ${nearP1}, 위치: (${this.player.sprite.x}, ${this.player.sprite.y})`);
+    }
+    if (nearP2 !== gvm.get('isNearWater')) {
+      console.log(`P2 물 감지 변경: ${gvm.get('isNearWater')} -> ${nearP2}, 위치: (${this.player2.sprite.x}, ${this.player2.sprite.y})`);
+    }
+    
     if (gvm.get('isNearWater') !== nearP2) {
       gvm.set('isNearWater', nearP2);
     }
@@ -1404,6 +1415,27 @@ export class GameScene extends Phaser.Scene {
     if (this.uiFrameTicker === 0) {
       this.refreshHeartsUI();
     }
+  }
+  
+  private setupAbilityEvents(): void {
+    // 능력 해금 이벤트 처리
+    this.events.on('unlock_ability', (abilityType: string) => {
+      console.log(`능력 해금: ${abilityType}`);
+      
+      if (abilityType === 'watering_can') {
+        // 물뿌리개 능력 해금
+        const gvm = GlobalVariableManager.getInstance();
+        gvm.set('ability_watering_can_unlocked', true);
+        
+        console.log('1P 물뿌리개 능력이 해금되었습니다!');
+      } else if (abilityType === 'vine_extension') {
+        // 덩굴 확장 능력 해금
+        const gvm = GlobalVariableManager.getInstance();
+        gvm.set('ability_vine_extension_unlocked', true);
+        
+        console.log('2P 덩굴 확장 능력이 해금되었습니다!');
+      }
+    });
   }
 
 

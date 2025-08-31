@@ -15,12 +15,13 @@ export class BurningVine extends BlockerObject {
     const def: BlockerDef = {
       kind: 'blocker',
       id: `burning_vine_${Math.floor(x)}_${Math.floor(y)}`,
-      pos: { x: x / 64, y: y / 64 }, // 타일 좌표로 변환
-      sprite: { type: 'sprite', key: 'burning_vine', frame: 0 },
+      pos: { x: x, y: y }, // 타일 좌표 그대로 사용
+      sprite: { type: 'sprite', key: 'vine', frame: 0 },
       collider: 'static'
     };
     super(scene, def, 64, runner);
     
+    // ObjectManager에서 이미 픽셀 좌표로 변환되어 전달됨
     this.x = x;
     this.y = y;
     
@@ -42,18 +43,14 @@ export class BurningVine extends BlockerObject {
     const visualSprite = (this.sprite as any).linked || this.sprite;
     if (!visualSprite) return;
     
-    // 불타는 덩굴 초기 설정
-    visualSprite.setScale(1.2);
-    visualSprite.setTint(0xff6600);
+    // 덩굴 초기 설정 (크기 3배 축소)
+    visualSprite.setScale(1.2 / 3);
     
     if (this.isExtinguished) {
       visualSprite.setVisible(false);
       if (this.sprite.body) {
         this.scene.physics.world.disable(this.sprite);
       }
-    } else {
-      this.createFireEffect();
-      this.createBurnAnimation();
     }
   }
 
@@ -65,8 +62,8 @@ export class BurningVine extends BlockerObject {
     this.burnAnimation = this.scene.tweens.add({
       targets: visualSprite,
       alpha: { from: 0.7, to: 1 },
-      scaleX: { from: 1.1, to: 1.3 },
-      scaleY: { from: 1.1, to: 1.3 },
+      scaleX: { from: 1.1 / 3, to: 1.3 / 3 },
+      scaleY: { from: 1.1 / 3, to: 1.3 / 3 },
       duration: 500,
       yoyo: true,
       repeat: -1,
@@ -97,8 +94,10 @@ export class BurningVine extends BlockerObject {
     
     const gvm = GlobalVariableManager.getInstance();
     const hasWateringCan = gvm.get('watering_can_collected') === true;
+    const wateringCanUnlocked = gvm.get('ability_watering_can_unlocked') === true;
     
-    return hasWateringCan;
+    // 물뿌리개를 획득했거나 능력이 해금되었으면 사용 가능
+    return hasWateringCan || wateringCanUnlocked;
   }
 
   public extinguishWithWater(): void {
@@ -116,18 +115,14 @@ export class BurningVine extends BlockerObject {
       this.burnAnimation.stop();
     }
     
-    // 연기 효과
-    this.createSmokeEffect();
-    
-    // 덩굴이 검게 변하며 사라짐
+    // 덩굴이 바로 사라짐
     const visualSprite = (this.sprite as any).linked || this.sprite;
     if (visualSprite) {
       this.scene.tweens.add({
         targets: visualSprite,
         alpha: 0,
-        tint: 0x333333,
-        scale: 0.5,
-        duration: 1000,
+        scale: 0,
+        duration: 500,
         ease: 'Power2',
         onComplete: () => {
           // 충돌체 비활성화
@@ -173,7 +168,7 @@ export class BurningVine extends BlockerObject {
     const message = this.scene.add.text(
       this.x,
       this.y - 30,
-      '불타는 덩굴을 제거했습니다!',
+      '덩굴을 제거했습니다!',
       {
         fontSize: '14px',
         color: '#4fc3f7',
@@ -196,7 +191,7 @@ export class BurningVine extends BlockerObject {
     });
   }
 
-  public checkWaterInteraction(waterX: number, waterY: number, range: number = 50): boolean {
+  public checkWaterInteraction(waterX: number, waterY: number, range: number = 120): boolean {
     // 물뿌리개가 근처에 있는지 체크
     if (this.isExtinguished) return false;
     

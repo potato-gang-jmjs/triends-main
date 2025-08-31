@@ -89,12 +89,13 @@ export class PreloadScene extends Phaser.Scene {
     
     // ───── NPC: 물 마을 주민들 스프라이트시트 ─────
     this.load.spritesheet('water_residents', 'assets/npcs/water_residents.png', {
-      frameWidth: 64,
-      frameHeight: 64
+      frameWidth: 96,
+      frameHeight: 96
     });
 
     // ───── 튜토리얼 오브젝트 에셋 ─────
     this.load.image('watering_can_item', 'assets/characters/watering_can.png');
+    this.load.image('vine', 'assets/objects/vine.png'); // 덩굴
     this.load.image('burning_vine', 'assets/gimmicks/vine.png'); // 불타는 덩굴용 임시
 
     // 오브젝트 전용 스프라이트시트(예: 16x16)를 별도 키로 로드 (오브젝트는 스케일로 확대 표시)

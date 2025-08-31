@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GlobalVariableManager } from './GlobalVariableManager';
 import { GinsengPlayer } from '../entities/GinsengPlayer';
 
-export type VineState = 'idle' | 'extending' | 'retracting';
+export type VineState = 'idle' | 'transformed' | 'extending' | 'retracting';
 
 export class VineExtensionSystem {
   private scene: Phaser.Scene;
@@ -25,6 +25,7 @@ export class VineExtensionSystem {
   private vineHalfThicknessPx = 3;
   private p1RadiusPx = 12;
   private isP1Hooked = false;
+  private hookedObject: any = null;
 
   // 스프라이트 기반 렌더링
   private tileSize = 64;
@@ -248,7 +249,7 @@ export class VineExtensionSystem {
   // 게이지 UI는 제거됨
 
   private computeDirectionFromKeys(): Phaser.Math.Vector2 {
-    // 8방향: 화살표 조합으로 계산 (Q가 눌린 동안 방향 선택)
+    // 8방향: 방향키 조합으로 계산 (Q가 눌린 동안 방향 선택)
     const dx = (this.dirKeys.right.isDown ? 1 : 0) + (this.dirKeys.left.isDown ? -1 : 0);
     const dy = (this.dirKeys.down.isDown ? 1 : 0) + (this.dirKeys.up.isDown ? -1 : 0);
     if (dx === 0 && dy === 0) return this.vineDirection.clone();
@@ -286,42 +287,70 @@ export class VineExtensionSystem {
     if (canUseVine && this.state === 'idle') {
       this.updatePHintText();
       this.setPHintVisible(true);
+    } else if (this.state === 'transformed') {
+      this.pHintText?.setText('Q키 + 방향키로 덩굴 확장');
+      this.pHintText?.setColor('#ffff00');
+      this.setPHintVisible(true);
     } else {
       this.setPHintVisible(false);
     }
 
-    // 시작: 물 근처이거나 물뿌리기 효과가 있을 때 E를 누르면 즉시 확장 시작
+    // E키로 변신 (대기 상태에서만)
     if (canUseVine && this.state === 'idle' && Phaser.Input.Keyboard.JustDown(this.keyE)) {
-      this.state = 'extending';
+      this.state = 'transformed';
       // 번개 효과 트리거
       this.triggerThunderEffect();
       // 인삼이를 vine 형태로 변신
       if (this.ginsengPlayer) {
         this.ginsengPlayer.setForm('vine');
-        // 능력 중에는 본체(1열 루트)를 보이지 않게 처리 + 이동 잠금 강화
-        this.ginsengPlayer.sprite.setVisible(false);
-        this.ginsengPlayer.lockMovement();
       }
-      
-      // 초기 방향: Q+방향키가 눌려있다면 해당 방향, 아니면 우측
-      this.vineDirection = this.computeDirectionFromKeys();
-      if (this.vineDirection.lengthSq() === 0) this.vineDirection.set(1, 0);
-      this.currentLengthPx = 0;
       this.gvm.set('isVineSkillActivated', true);
-      this.gvm.set('vine_collision', true);
-      this.gvm.set('collision', true);
-      this.ensureVineGraphic();
+    }
+    
+    // 변신 상태에서 E키를 다시 누르면 해제
+    if (this.state === 'transformed' && Phaser.Input.Keyboard.JustDown(this.keyE)) {
+      this.state = 'idle';
+      // 번개 효과 트리거
+      this.triggerThunderEffect();
+      // 인삼이를 원래 ginseng 형태로 복원
+      if (this.ginsengPlayer) {
+        this.ginsengPlayer.setForm('ginseng');
+      }
+      this.gvm.set('isVineSkillActivated', false);
+    }
+    
+    // 변신 상태에서 Q키를 누르면 덩굴 확장 시작
+    if (this.state === 'transformed' && this.keyQ.isDown) {
+      // 방향키가 눌려있어야 확장 가능
+      const direction = this.computeDirectionFromKeys();
+      if (direction.lengthSq() > 0) {
+        this.state = 'extending';
+        this.vineDirection = direction;
+        this.currentLengthPx = 0;
+        // 인삼이는 이미 vine 형태이므로 이동만 잠금
+        if (this.ginsengPlayer) {
+          this.ginsengPlayer.sprite.setVisible(false);
+          this.ginsengPlayer.lockMovement();
+        }
+        this.gvm.set('vine_collision', true);
+        this.gvm.set('collision', true);
+        this.ensureVineGraphic();
+      }
     }
 
     if (this.state === 'extending') {
-      // 조준 보정: Q가 눌려있으면 방향 갱신 허용
+      // Q키를 계속 누르고 있으면 확장, 떼면 수축
       if (this.keyQ.isDown) {
+        // 방향키로 방향 조정
         const v = this.computeDirectionFromKeys();
         if (v.lengthSq() > 0) this.vineDirection.copy(v);
+        
+        const add = (this.extendSpeedPxPerSec * (deltaMs / 1000));
+        this.currentLengthPx = Math.min(this.currentLengthPx + add, this.maxLengthPx);
+      } else {
+        // Q키를 떼면 수축 시작
+        this.state = 'retracting';
       }
-
-      const add = (this.extendSpeedPxPerSec * (deltaMs / 1000));
-      this.currentLengthPx = Math.min(this.currentLengthPx + add, this.maxLengthPx);
 
       // 덩굴 시각 업데이트 (스프라이트 기반)
       this.updateVineSprites();
@@ -331,10 +360,10 @@ export class VineExtensionSystem {
         this.isP1Hooked = true;
         this.gvm.set('p1VineLocked', true);
       }
-
-      // E를 떼면 수축 상태로 전환
-      if (!this.keyE.isDown) {
-        this.state = 'retracting';
+      
+      // CliffWateringCan 오브젝트 감지
+      if (!this.hookedObject) {
+        this.checkWateringCanInteraction();
       }
     }
 
@@ -350,15 +379,17 @@ export class VineExtensionSystem {
         const end = this.getVineEnd();
         this.player1.setPosition(end.x, end.y);
       }
+      
+      // 물뿌리개 끌어오기 (충돌 무시 직접 이동)
+      if (this.hookedObject) {
+        this.pullWateringCan();
+      }
 
       if (this.currentLengthPx <= 0) {
-        this.state = 'idle';
+        this.state = 'transformed';  // 다시 변신 상태로
         
-        // 번개 효과 트리거
-        this.triggerThunderEffect();
-        // 인삼이를 원래 ginseng 형태로 복원 + 가시성/이동 해제
+        // 인삼이 시각화 복원 + 이동 해제
         if (this.ginsengPlayer) {
-          this.ginsengPlayer.setForm('ginseng');
           this.ginsengPlayer.sprite.setVisible(true);
           this.ginsengPlayer.unlockMovement();
         }
@@ -367,9 +398,9 @@ export class VineExtensionSystem {
         this.clearVineSprites();
         this.gvm.set('vine_collision', false);
         this.gvm.set('collision', false);
-        this.gvm.set('isVineSkillActivated', false);
         this.isP1Hooked = false;
         this.gvm.set('p1VineLocked', false);
+        this.hookedObject = null;
       }
     }
   }
@@ -385,6 +416,53 @@ export class VineExtensionSystem {
   private getVineEnd(): Phaser.Math.Vector2 {
     const v = this.vineDirection.clone().normalize().scale(this.currentLengthPx);
     return this.getVineStart().add(v);
+  }
+  
+  private checkWateringCanInteraction(): void {
+    // ObjectManager에서 CliffWateringCan 오브젝트 찾기
+    const objectManager = (this.scene as any).objectManager;
+    if (!objectManager) return;
+    
+    const objects = objectManager.objects;
+    if (!objects) return;
+    
+    objects.forEach((obj: any) => {
+      if (obj.constructor.name === 'CliffWateringCan' && obj.canInteractWithVine && obj.canInteractWithVine()) {
+        const vineEnd = this.getVineEnd();
+        const objSprite = (obj.sprite as any).linked || obj.sprite;
+        if (!objSprite) return;
+        
+        const distance = Phaser.Math.Distance.Between(vineEnd.x, vineEnd.y, objSprite.x, objSprite.y);
+        if (distance < 50) {
+          this.hookedObject = obj;
+        }
+      }
+    });
+  }
+  
+  private pullWateringCan(): void {
+    if (!this.hookedObject) return;
+    
+    // 물뿌리개 스프라이트 가져오기
+    const objSprite = (this.hookedObject.sprite as any).linked || this.hookedObject.sprite;
+    if (!objSprite) return;
+    
+    // 덩굴 끝으로 물뿌리개를 끌어오기 (1P처럼)
+    const end = this.getVineEnd();
+    objSprite.setPosition(end.x, end.y);
+    
+    // 덩굴이 완전히 수축했을 때 획듍
+    if (this.currentLengthPx <= 10) {
+      // 인삼이 위치로 이동
+      const ginsengPos = this.getVineStart();
+      objSprite.setPosition(ginsengPos.x, ginsengPos.y);
+      
+      // 획듍 처리
+      if (this.hookedObject.collectWithVine) {
+        this.hookedObject.collectWithVine();
+      }
+      this.hookedObject = null;
+    }
   }
 
   private testHitPlayer1(): boolean {

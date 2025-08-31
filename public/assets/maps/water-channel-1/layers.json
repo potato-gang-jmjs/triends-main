@@ -3,6 +3,6 @@
   "땅": 10,
   "Layer_1": 20,
   "Layer_2": 30,
-  "Layer_3": 20
-
+  "Layer_3": 20,
+  "invisible_water": -10
 }

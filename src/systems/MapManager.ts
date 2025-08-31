@@ -159,7 +159,7 @@ export class MapManager {
   }
 
   /**
-   * 주어진 월드 좌표가 물 타일 인접(상하좌우 4방 기준)에 있는지 판단
+   * 주어진 월드 좌표가 물 타일 인접(상하좌우 + 대각선 8방 기준)에 있는지 판단
    * 맵 데이터의 레이어에 `is_water: true` 가 설정된 레이어의 타일을 기준으로 검사한다.
    * 맵 데이터가 없거나 물 레이어가 없으면 false.
    */
@@ -185,14 +185,44 @@ export class MapManager {
       return false;
     };
 
-    // 4방향 인접 + 현재 위치가 물인 경우 포함
-    if (isWaterAt(tx, ty)) return true;
-    if (isWaterAt(tx + 1, ty)) return true;
-    if (isWaterAt(tx - 1, ty)) return true;
-    if (isWaterAt(tx, ty + 1)) return true;
-    if (isWaterAt(tx, ty - 1)) return true;
+    // 8방향 인접 + 현재 위치가 물인 경우 포함
+    const directions = [
+      [0, 0],   // 현재 위치
+      [1, 0],   // 우
+      [-1, 0],  // 좌
+      [0, 1],   // 하
+      [0, -1],  // 상
+      [1, 1],   // 우하
+      [-1, 1],  // 좌하
+      [1, -1],  // 우상
+      [-1, -1]  // 좌상
+    ];
 
-    return false;
+    let foundWater = false;
+    for (const [dx, dy] of directions) {
+      if (isWaterAt(tx + dx, ty + dy)) {
+        foundWater = true;
+        break;
+      }
+    }
+
+    // 디버그: 물 감지 문제 확인
+    if (worldX < 300 || worldX > 800) {
+      console.log(`물 감지 체크: 월드좌표 (${worldX}, ${worldY}) -> 타일좌표 (${tx}, ${ty}), 결과: ${foundWater}`);
+      console.log(`  물 레이어 수: ${waterLayers.length}, 타일셋 크기: ${tileSize}`);
+      
+      // 주변 타일들도 체크
+      for (const [dx, dy] of directions) {
+        const checkX = tx + dx;
+        const checkY = ty + dy;
+        const hasWater = isWaterAt(checkX, checkY);
+        if (hasWater) {
+          console.log(`  물 타일 발견: (${checkX}, ${checkY})`);
+        }
+      }
+    }
+
+    return foundWater;
   }
 
   public getTilesTextureKey(): string {

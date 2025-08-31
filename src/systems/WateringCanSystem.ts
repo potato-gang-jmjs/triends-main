@@ -324,6 +324,9 @@ export class WateringCanSystem {
         // 물 소모 (1초에 1씩)
         this.waterAmount -= deltaMs / 1000;
         this.waterTimer += deltaMs;
+        
+        // 불타는 덩굴과의 상호작용 체크
+        this.checkBurningVineInteraction();
       } else {
         // 물이 다 떨어지면 자동으로 중지하고 idle 상태로
         this.isWatering = false;
@@ -373,5 +376,28 @@ export class WateringCanSystem {
 
   public getWaterAmount(): number {
     return this.waterAmount;
+  }
+
+  private checkBurningVineInteraction(): void {
+    // 물뿌리기 중일 때 주변 불타는 덩굴을 끄기
+    if (!this.waterEntity) return;
+
+    const waterX = this.waterEntity.x;
+    const waterY = this.waterEntity.y;
+
+    // ObjectManager에서 불타는 덩굴들을 찾아서 상호작용 체크
+    const objectManager = (this.scene as any).objectManager;
+    if (objectManager && objectManager.objects) {
+      objectManager.objects.forEach((obj: any) => {
+        if (obj.constructor.name === 'BurningVine') {
+          if (obj.checkWaterInteraction && obj.checkWaterInteraction(waterX, waterY, 120)) {
+            if (obj.canExtinguishWithWater && obj.canExtinguishWithWater()) {
+              obj.extinguishWithWater();
+              console.log('덩굴을 물로 제거했습니다!');
+            }
+          }
+        }
+      });
+    }
   }
 }

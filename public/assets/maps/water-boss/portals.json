@@ -1,8 +1,0 @@
-[
-  {
-    "id": "to_water_channel_2",
-    "area": { "x": 4, "y": 0, "width": 4, "height": 2 },
-    "target": { "mapId": "water-channel-2", "spawn": { "x": 18, "y": 12 } },
-    "options": { "fadeMs": 400 }
-  }
-]

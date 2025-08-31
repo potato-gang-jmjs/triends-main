@@ -94,8 +94,8 @@ export class NPCManager {
     _player: any,
     interactionZone: any
   ): void {
-    // 덩굴 확장 중 상호작용 차단
-    if (GlobalVariableManager.getInstance().get('collision')) return;
+    // 덩굴 확장 중 상호작용 차단 (능력 사용 중에만 제한)
+    if (GlobalVariableManager.getInstance().get('vine_collision')) return;
     const npc = (interactionZone as Phaser.Physics.Arcade.Sprite).getData('npc') as NPC;
     if (npc && !npc.isPlayerNearby) {
       npc.onPlayerEnter();
@@ -122,8 +122,8 @@ export class NPCManager {
 
   // 현재 상호작용 가능한 NPC 찾기
   public getCurrentInteractableNPC(): NPC | null {
-    // 덩굴 확장 중 상호작용 불가
-    if (GlobalVariableManager.getInstance().get('collision')) return null;
+    // 덩굴 확장 중 상호작용 불가 (능력 사용 중에만 제한)
+    if (GlobalVariableManager.getInstance().get('vine_collision')) return null;
     for (const npc of this.npcs.values()) {
       if (npc.canStartDialogue()) {
         return npc;

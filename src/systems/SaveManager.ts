@@ -66,7 +66,9 @@ export class SaveManager {
       dialogues: {},
       gameState: {
         currentScene: 'GameScene',
-        flags: {},
+        flags: {
+          water_quest_started: false
+        },
         customData: {
           // 진행 상황 확장 포인트
           progress: 'start'
@@ -139,7 +141,7 @@ export class SaveManager {
       };
       localStorage.setItem(this.getSlotKey(effectiveSlot), JSON.stringify(mergedData));
       this.updateMetaFromData(effectiveSlot, mergedData);
-      console.log(`게임 저장 완료 (슬롯 ${effectiveSlot})`);
+      // console.log(`게임 저장 완료 (슬롯 ${effectiveSlot})`);
     } catch (error) {
       console.error('게임 저장 실패:', error);
     }

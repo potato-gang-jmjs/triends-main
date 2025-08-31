@@ -45,16 +45,14 @@ conversations:
         action: null
 
   give_ability:
-    text: "인삼이는 물의 힘을 빌려 덩굴을 뻗을 수 있다네. 우주인 자네가 물을 공급해주면, 인삼이가 덩굴로 멀리 있는 물건을 끌어올 수 있을 것이네. 수로에서 유용할 거야."
-    action: "unlock_ability:vine_extension;set_flag:vine_ability_unlocked:true"
+    text: "수로는 위험하니 조심하게나. 물이 끊긴 지 오래되어 괴물들이 나타날지도 모르네."
     choices:
-      - text: "알겠습니다. 잘 사용하겠습니다"
+      - text: "알겠습니다. 조심하겠습니다"
         next: null
         action: null
 
   give_ability_quick:
-    text: "인삼이의 덩굴 능력을 해금했네. 물 근처에서 E키를 눌러보게나."
-    action: "unlock_ability:vine_extension;set_flag:vine_ability_unlocked:true"
+    text: "수로에서 조심하게나. 물이 돌아오길 바라네."
     next: null
 
   quest_decline:

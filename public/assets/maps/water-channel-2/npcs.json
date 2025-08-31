@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "npcId": "water_spider",
+    "pos": { "x": 16, "y": 16 },
+    "overrides": { "dialogueId": "water_spider" }
+  }
+]

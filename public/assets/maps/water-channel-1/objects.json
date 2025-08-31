@@ -2,7 +2,7 @@
   {
     "id": "cliff_watering_can",
     "kind": "interactive",
-    "pos": { "x": 10, "y": 5 },
+    "pos": { "x":4, "y": 12 },
     "sprite": { "key": "watering_can_item", "frame": 0 },
     "interaction": "vine_pull",
     "customClass": "CliffWateringCan"
@@ -10,8 +10,80 @@
   {
     "id": "burning_vine_1",
     "kind": "blocker",
-    "pos": { "x": 6, "y": 8 },
-    "sprite": { "key": "burning_vine", "frame": 0 },
+    "pos": { "x": 12, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_2",
+    "kind": "blocker",
+    "pos": { "x": 16, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_3",
+    "kind": "blocker",
+    "pos": { "x": 20, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_4",
+    "kind": "blocker",
+    "pos": { "x": 24, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_5",
+    "kind": "blocker",
+    "pos": { "x": 28, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_10",
+    "kind": "blocker",
+    "pos": { "x": 44, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_6",
+    "kind": "blocker",
+    "pos": { "x": 48, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_7",
+    "kind": "blocker",
+    "pos": { "x": 52, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_8",
+    "kind": "blocker",
+    "pos": { "x": 56, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
+    "interaction": "water_extinguish",
+    "customClass": "BurningVine"
+  },
+  {
+    "id": "burning_vine_9",
+    "kind": "blocker",
+    "pos": { "x": 60, "y": 32 },
+    "sprite": { "key": "vine", "frame": 0 },
     "interaction": "water_extinguish",
     "customClass": "BurningVine"
   }

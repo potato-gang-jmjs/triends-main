@@ -1,30 +1,63 @@
 npc_id: "whale_sprout"
 conversations:
   introduction:
-    text: "..."
-    condition: "flags.water_restored == false"
+    text: "...뿌...우...(희미하게 울음소리가 들린다)"
+    condition: "flags.water_restored == false && flags.vine_ability_unlocked == false"
     choices:
       - text: "안녕하세요?"
-        next: "no_response"
+        next: "weak_response"
         action: null
-      - text: "일어나세요"
-        next: "no_response"
+      - text: "무슨 일이에요?"
+        next: "weak_response"
         action: null
 
-  no_response:
-    text: "...(아무런 반응이 없다. 완전히 말라비틀어져 있다.)"
+  weak_response:
+    text: "...뿌우...(말라비틀어진 몸에서 간신히 소리를 낸다) ...물...이...필요...해..."
     choices:
-      - text: "(만져본다)"
-        next: "dried_state"
+      - text: "물을 구해올게요!"
+        next: "give_vine_for_help"
         action: null
-      - text: "(그냥 둔다)"
+      - text: "어디서 물을 구할 수 있나요?"
+        next: "explain_water_source"
+        action: null
+
+  give_vine_for_help:
+    text: "...뿌우...! (마지막 힘을 짜내어 특별한 능력을 전해준다) ...인삼이...덩굴...수로에...물...괴물..."
+    action: "unlock_ability:vine_extension;set_flag:vine_ability_unlocked:true"
+    choices:
+      - text: "덩굴 능력을 받았다!"
+        next: "vine_explanation"
+        action: null
+
+  vine_explanation:
+    text: "...뿌우...(우주인이 물을 공급하면, 인삼이가 덩굴로 멀리 있는 물건을 끌어올 수 있다는 것을 알려준다) ...수로...남쪽..."
+    choices:
+      - text: "알겠어요! 꼭 물을 가져올게요!"
         next: null
         action: null
 
-  dried_state:
-    text: "...(딱딱하게 굳어있다. 생명의 기운을 전혀 느낄 수 없다.)"
+  explain_water_source:
+    text: "...수로...남쪽...괴물이...물을...훔쳐...가고...있어..."
     choices:
-      - text: "(물을 구해와야겠다)"
+      - text: "제가 처치하겠어요!"
+        next: "give_vine_for_help"
+        action: null
+      - text: "위험할 것 같은데..."
+        next: "desperate_plea"
+        action: null
+
+  desperate_plea:
+    text: "...제발...도와...줘...(간절한 눈빛으로 바라본다)"
+    choices:
+      - text: "알겠어요, 도와드릴게요"
+        next: "give_vine_for_help"
+        action: null
+
+  dried_state:
+    text: "...(딱딱하게 굳어있다. 이미 능력을 주고 기력이 다한 듯하다.)"
+    condition: "flags.water_restored == false && flags.vine_ability_unlocked == true"
+    choices:
+      - text: "꼭 물을 가져올게요"
         next: null
         action: null
 
@@ -45,12 +78,29 @@ conversations:
 
   gratitude:
     text: "뿌우~ (고개를 숙여 감사의 인사를 한다. 따뜻한 눈빛으로 바라본다)"
+    condition: "flags.vine_ability_unlocked == true"
     choices:
-      - text: "천만에요"
+      - text: "약속대로 물을 가져왔어요!"
         next: "final_blessing"
         action: null
       - text: "(머리를 쓰다듬는다)"
         next: "final_blessing"
+        action: null
+
+  gratitude_first_time:
+    text: "뿌우우우~!! (더욱 크게 울며 감사를 표현한다. 덩굴 능력을 주고 또 물까지 가져와준 것에 감격한 듯하다)"
+    condition: "flags.vine_ability_unlocked == false"
+    choices:
+      - text: "고마워요!"
+        next: "give_vine_ability_after"
+        action: null
+
+  give_vine_ability_after:
+    text: "뿌우~! (이미 주었던 능력이 더 강해진 것 같다. 이제 덩굴을 더 잘 사용할 수 있을 것이다)"
+    action: "unlock_ability:vine_extension;set_flag:vine_ability_unlocked:true"
+    choices:
+      - text: "감사합니다!"
+        next: "final_blessing" 
         action: null
 
   final_blessing:

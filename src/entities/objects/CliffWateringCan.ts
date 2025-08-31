@@ -11,17 +11,21 @@ export class CliffWateringCan extends InteractiveObject {
   private y: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, runner?: ActionProcessor) {
+    // JSON에서 받은 타일 좌표를 픽셀 좌표로 변환
+    const pixelX = x * 64;
+    const pixelY = y * 64;
+    
     const def: InteractiveDef = {
       kind: 'interactive',
-      id: `cliff_watering_can_${Math.floor(x)}_${Math.floor(y)}`,
-      pos: { x: x / 64, y: y / 64 }, // 타일 좌표로 변환
+      id: `cliff_watering_can_${Math.floor(pixelX)}_${Math.floor(pixelY)}`,
+      pos: { x: x, y: y }, // 타일 좌표 그대로 사용
       sprite: { type: 'sprite', key: 'watering_can_item', frame: 0 },
       collider: 'static'
     };
     super(scene, def, 64, runner);
     
-    this.x = x;
-    this.y = y;
+    this.x = pixelX;
+    this.y = pixelY;
     
     // 이미 획득했는지 체크
     const gvm = GlobalVariableManager.getInstance();
@@ -37,8 +41,8 @@ export class CliffWateringCan extends InteractiveObject {
     const visualSprite = (this.sprite as any).linked || this.sprite;
     if (!visualSprite) return;
     
-    // 절벽 너머에 있다는 것을 시각적으로 표현
-    visualSprite.setScale(0.8);
+    // 절벽 너머에 있다는 것을 시각적으로 표현 (크기 3배 축소)
+    visualSprite.setScale(0.8 / 3);
     visualSprite.setAlpha(0.9);
     
     // 덩굴로 가져올 수 있다는 힌트 표시
@@ -52,9 +56,12 @@ export class CliffWateringCan extends InteractiveObject {
 
   private createVineIndicator(): void {
     // 물뿌리개 위에 힌트 텍스트 표시
+    const visualSprite = (this.sprite as any).linked || this.sprite;
+    if (!visualSprite) return;
+    
     this.vineIndicator = this.scene.add.text(
-      this.x,
-      this.y - 30,
+      visualSprite.x,
+      visualSprite.y - 30,
       '🌿',
       {
         fontSize: '20px',
@@ -62,11 +69,12 @@ export class CliffWateringCan extends InteractiveObject {
       }
     );
     this.vineIndicator.setOrigin(0.5);
+    this.vineIndicator.setDepth(1000);
     
     // 위아래로 움직이는 애니메이션
     this.scene.tweens.add({
       targets: this.vineIndicator,
-      y: this.y - 35,
+      y: visualSprite.y - 35,
       duration: 1000,
       yoyo: true,
       repeat: -1,
@@ -97,16 +105,17 @@ export class CliffWateringCan extends InteractiveObject {
     // 물뿌리개 능력 해금
     this.scene.events.emit('unlock_ability', 'watering_can');
     
+    const visualSprite = (this.sprite as any).linked || this.sprite;
+    
     // 획득 애니메이션
     this.scene.tweens.add({
-      targets: this,
+      targets: visualSprite,
       scale: 0,
       alpha: 0,
       duration: 500,
       ease: 'Power2',
       onComplete: () => {
-        // 상위 클래스에 setVisible이 없으므로 제거
-        // this.setVisible(false);
+        visualSprite.setVisible(false);
         this.vineIndicator?.destroy();
         
         // 획득 메시지
@@ -114,11 +123,20 @@ export class CliffWateringCan extends InteractiveObject {
       }
     });
   }
+  
+  public getSprite(): any {
+    return (this.sprite as any).linked || this.sprite;
+  }
 
   private showCollectionMessage(): void {
+    // 인삼이 위치에서 메시지 표시
+    const ginsengPlayer = (this.scene as any).player2;
+    const msgX = ginsengPlayer ? ginsengPlayer.sprite.x : this.x;
+    const msgY = ginsengPlayer ? ginsengPlayer.sprite.y : this.y;
+    
     const message = this.scene.add.text(
-      this.x,
-      this.y,
+      msgX,
+      msgY,
       '물뿌리개를 획득했습니다!\nShift키로 물을 뿌릴 수 있습니다',
       {
         fontSize: '16px',
@@ -134,7 +152,7 @@ export class CliffWateringCan extends InteractiveObject {
     // 위로 올라가며 사라지는 애니메이션
     this.scene.tweens.add({
       targets: message,
-      y: this.y - 50,
+      y: msgY - 50,
       alpha: 0,
       duration: 2000,
       ease: 'Power2',
