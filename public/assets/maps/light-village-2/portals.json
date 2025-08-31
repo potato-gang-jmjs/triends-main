@@ -2,7 +2,7 @@
   {
     "id": "to_light_village_01",
     "area": { "x": 1, "y": 84, "width": 2, "height": 2 },
-    "target": { "mapId": "light-village", "spawn": { "x": 4, "y": 84 } },
+    "target": { "mapId": "light-village", "spawn": { "x": 91, "y": 59 } },
     "options": { "fadeMs": 400, "color": 65280 }
   }
 ]

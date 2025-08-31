@@ -826,7 +826,7 @@ export class GameScene extends Phaser.Scene {
     laser.setOrigin(0.5, 0.5);
 
     // 수명
-    this.time.delayedCall(800, () => {
+    this.time.delayedCall(1000, () => {
       if (laser.active) laser.destroy();
     });
 
@@ -1409,7 +1409,7 @@ export class GameScene extends Phaser.Scene {
     this.lightSystem?.destroy();
     this.lightSystem = undefined;
 
-    if (mapId !== 'light-village') {
+    if (mapId !== 'light-village' && mapId !== 'light-village-2') {
       return;
     }
 

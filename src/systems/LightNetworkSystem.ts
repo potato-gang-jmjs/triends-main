@@ -63,6 +63,27 @@ export class LightNetworkSystem {
     /** 램프에서 도달 가능한 wire 좌표 집합 ("x,y") */
     private readonly reachableWireSet: Set<string> = new Set();
 
+        /** ── Multi-lamp support (light-village-2용) ───────────────────────────── */
+    private readonly simultaneousWindowMs = 500;
+    private lampClusters: Array<{
+        id: number;
+        tiles: Set<string>;
+        bbox: { minX: number; minY: number; maxX: number; maxY: number };
+        sensor?: Phaser.Physics.Arcade.Image;
+        reachable: Set<string>;
+        revealed: boolean; // lamps_off에서 이미 꺼진(=켜진) 상태인지
+    }> = [];
+    private lampActivatedAt: Map<number, number> = new Map();
+
+    private flowerGroups: Array<{
+        id: number;
+        tiles: TileXY[];
+        required: Set<number>;
+        cleared: boolean;
+        center: { x: number; y: number };
+    }> = [];
+
+
     constructor(scene: Phaser.Scene, mapId: string, tilesKey: string, tileSize: number) {
         this.scene   = scene;
         this.mapId   = mapId.replace(/^map:/, '');
@@ -90,27 +111,39 @@ export class LightNetworkSystem {
         this.activated = false;
     }
 
-    /** 램프 센서와 레이저 그룹 overlap 연결 */
+    /** 램프 클러스터별로 레이저 overlap 연결 */
     public attachLaserGroup(lasers: Phaser.Physics.Arcade.Group): void {
-        if (!this.lampSensorBody) return;
-        this.scene.physics.add.overlap(
-        this.lampSensorBody,
-        lasers,
-        (_lamp, laser) => {
-            const s = laser as Phaser.Physics.Arcade.Sprite;
-            if (s.active) {
-            s.disableBody(true, true);
-            s.destroy();
-            }
-            if (!this.activated) {
-            this.activated = true;
-            this.propagateAndTrigger();
-            }
-        },
-        undefined,
-        this
-        );
+        if (!this.lampClusters.length) return;
+
+        for (const cluster of this.lampClusters) {
+            if (!cluster.sensor) continue;
+
+            this.scene.physics.add.overlap(
+                cluster.sensor,
+                lasers,
+                (_lamp, laser) => {
+                    const s = laser as Phaser.Physics.Arcade.Sprite;
+                    if (s.active) {
+                        s.disableBody(true, true);
+                        s.destroy();
+                    }
+
+                    const now = this.scene.time.now;
+                    this.lampActivatedAt.set(cluster.id, now);
+
+                    this.flashLampCluster(cluster);               // 클러스터 중심 플래시
+                    this.rippleAlongWireSet(cluster.reachable);   // 해당 클러스터 와이어로 파동
+
+                    // 바로 켜지지 않는다. (동시성 판정에서만 켬)
+                    this.tryTriggerMultiLampFlowers();
+
+                },
+                undefined,
+                this
+            );
+        }
     }
+
 
     // ───────────────────────────────────────────── internal
 
@@ -148,9 +181,11 @@ export class LightNetworkSystem {
         for (const t of lampsOff.tiles) if (hasXY(t)) this.lampTiles.add(this.k(t.x, t.y));
         for (const t of flowersOff.tiles) if (hasXY(t)) this.deviceTiles.set(this.k(t.x, t.y), { x: t.x, y: t.y });
 
-        // BFS 시작점 계산
-        this.computeReachableWires();
+        // 클러스터/센서/도달 와이어 및 꽃 그룹 선계산
+        this.buildLampClustersFromLampTiles();
+        this.buildFlowerGroups();
     }
+
 
 
     /** 램프 둘레에서 시작해서 wires 위로 BFS → 도달 집합 계산 */
@@ -187,31 +222,230 @@ export class LightNetworkSystem {
         }
     }
 
+        /** lamps_off 타일 집합을 4방향 인접 기준으로 클러스터화하고,
+     *  각 클러스터에 대해 센서(physics body)와 도달 가능 wire 집합을 계산한다. */
+    private buildLampClustersFromLampTiles(): void {
+        this.lampClusters = [];
 
-    private createLampSensor(): void {
-        if (this.lampTiles.size === 0) return;
+        // 1) flood fill로 클러스터 나누기
+        const visited = new Set<string>();
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]] as const;
+        const tiles = Array.from(this.lampTiles);
 
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const key of this.lampTiles) {
-            const { x, y } = parseKeyToXY(key);
-            if (x < minX) minX = x; if (y < minY) minY = y;
-            if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+        let nextId = 1;
+        for (const key of tiles) {
+            if (visited.has(key)) continue;
+            const { x: sx, y: sy } = parseKeyToXY(key);
+            const q: TileXY[] = [{ x: sx, y: sy }];
+            const clusterTiles = new Set<string>();
+            let minX = sx, minY = sy, maxX = sx, maxY = sy;
+
+            while (q.length) {
+                const { x, y } = q.shift()!;
+                const k = this.k(x, y);
+                if (visited.has(k) || !this.lampTiles.has(k)) continue;
+                visited.add(k);
+                clusterTiles.add(k);
+                if (x < minX) minX = x; if (y < minY) minY = y;
+                if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+
+                for (const [dx, dy] of dirs) {
+                    const nx = x + dx, ny = y + dy;
+                    const nk = this.k(nx, ny);
+                    if (!visited.has(nk) && this.lampTiles.has(nk)) {
+                        q.push({ x: nx, y: ny });
+                    }
+                }
+            }
+
+            const bbox = { minX, minY, maxX, maxY };
+            const reachable = this.computeReachableWiresFor(clusterTiles);
+            this.lampClusters.push({ id: nextId++, tiles: clusterTiles, bbox, reachable, revealed: false });
         }
 
-        const centerX = (minX + maxX + 1) * 0.5 * this.tileSize;
-        const centerY = (minY + maxY + 1) * 0.5 * this.tileSize;
-        const w = (maxX - minX + 1) * this.tileSize;
-        const h = (maxY - minY + 1) * this.tileSize;
+        // 2) 클러스터별 센서 생성 (램프 타일 외곽에 딱 맞는 직사각형)
+        for (const c of this.lampClusters) {
+            const centerX = (c.bbox.minX + c.bbox.maxX + 1) * 0.5 * this.tileSize;
+            const centerY = (c.bbox.minY + c.bbox.maxY + 1) * 0.5 * this.tileSize;
+            const w = (c.bbox.maxX - c.bbox.minX + 1) * this.tileSize;
+            const h = (c.bbox.maxY - c.bbox.minY + 1) * this.tileSize;
 
-        const img = this.scene.physics.add.image(centerX, centerY, undefined as unknown as string);
-        img.setVisible(false).setActive(true);
-        const body = img.body as Phaser.Physics.Arcade.Body;
-        body.setAllowGravity(false);
-        body.setImmovable(true);
-        body.setSize(w, h);
-        body.setOffset(-w / 2, -h / 2);
-        this.lampSensorBody = img;
+            const img = this.scene.physics.add.image(centerX, centerY, undefined as unknown as string);
+            img.setVisible(false).setActive(true);
+            const body = img.body as Phaser.Physics.Arcade.Body;
+            body.setAllowGravity(false);
+            body.setImmovable(true);
+            body.setSize(w, h);
+            body.setOffset(-w / 2, -h / 2);
+            c.sensor = img;
+        }
     }
+
+    /** 특정 램프 클러스터에서 시작해 wires 위로 BFS → 도달 집합 계산 */
+    private computeReachableWiresFor(clusterTiles: Set<string>): Set<string> {
+        const starts: string[] = [];
+        const seen = new Set<string>();
+
+        for (const key of clusterTiles) {
+            const { x, y } = parseKeyToXY(key);
+            const adj = [ this.k(x+1,y), this.k(x-1,y), this.k(x,y+1), this.k(x,y-1) ];
+            for (const a of adj) {
+                if (this.wiresSet.has(a) && !seen.has(a)) {
+                    seen.add(a);
+                    starts.push(a);
+                }
+            }
+        }
+
+        const reachable = new Set<string>();
+        const visited = new Set<string>(starts);
+        const q = [...starts];
+        while (q.length) {
+            const cur = q.shift()!;
+            reachable.add(cur);
+            const { x: cx, y: cy } = parseKeyToXY(cur);
+            const nb = [ this.k(cx+1,cy), this.k(cx-1,cy), this.k(cx,cy+1), this.k(cx,cy-1) ];
+            for (const nk of nb) {
+                if (this.wiresSet.has(nk) && !visited.has(nk)) {
+                    visited.add(nk);
+                    q.push(nk);
+                }
+            }
+        }
+        return reachable;
+    }
+
+    /** flowers_off 레이어를 미리 그룹화하고, 각 그룹에 필요한 램프 클러스터 집합을 계산 */
+    private buildFlowerGroups(): void {
+        this.flowerGroups = [];
+        const visited = new Set<string>();
+        const all = Array.from(this.deviceTiles.values());
+
+        let gid = 1;
+        for (const t of all) {
+            const key = this.k(ensureNumber(t.x, 'flower.x'), ensureNumber(t.y, 'flower.y'));
+            if (visited.has(key)) continue;
+
+            const tiles = this.collectContiguousFlowers(t.x!, t.y!, visited);
+            if (!tiles.length) continue;
+
+            // 중심좌표 (이펙트용)
+            const cx = (tiles.reduce((s,v)=>s+v.x,0)/tiles.length + 0.5) * this.tileSize;
+            const cy = (tiles.reduce((s,v)=>s+v.y,0)/tiles.length + 0.5) * this.tileSize;
+
+            // 이 그룹이 연결된 램프 클러스터 집합 계산
+            const required = new Set<number>();
+            for (const c of this.lampClusters) {
+                let touches = false;
+                for (const g of tiles) {
+                    const adj = [ this.k(g.x+1,g.y), this.k(g.x-1,g.y), this.k(g.x,g.y+1), this.k(g.x,g.y-1) ];
+                    if (adj.some(a => c.reachable.has(a))) { touches = true; break; }
+                }
+                if (touches) required.add(c.id);
+            }
+
+            this.flowerGroups.push({ id: gid++, tiles, required, cleared: false, center: { x: cx, y: cy } });
+        }
+    }
+
+    /** 해당 클러스터 램프를 '켜진' 상태로 보이도록 off 레이어에서 가린다 */
+    private revealLampCluster(cluster: { tiles: Set<string>; revealed: boolean } & any): void {
+        if (cluster.revealed) return;
+        for (const key of cluster.tiles) {
+            const { x, y } = parseKeyToXY(key);
+            this.hideTileFromLayer(this.lampsOffLayerName, x, y);
+        }
+        cluster.revealed = true;
+    }
+
+    /** 클러스터의 중심에 플래시 효과 */
+    private flashLampCluster(cluster: { bbox: { minX:number; minY:number; maxX:number; maxY:number } }): void {
+        const x = (cluster.bbox.minX + cluster.bbox.maxX + 1) * 0.5 * this.tileSize;
+        const y = (cluster.bbox.minY + cluster.bbox.maxY + 1) * 0.5 * this.tileSize;
+        const r = Math.max(cluster.bbox.maxX - cluster.bbox.minX + 1, cluster.bbox.maxY - cluster.bbox.minY + 1) * this.tileSize * 0.6;
+        const circ = this.scene.add.circle(x, y, r, 0xffffaa, 0.6);
+        circ.setBlendMode(Phaser.BlendModes.ADD).setDepth(1250);
+        this.overlay.add(circ);
+        this.scene.tweens.add({
+            targets: circ, alpha: 0, duration: 280, onComplete: () => circ.destroy()
+        });
+    }
+
+    /** 전달된 wire 집합을 따라 짧은 파동 이펙트 */
+    private rippleAlongWireSet(wires: Set<string>, onDone?: () => void): void {
+        const tiles = Array.from(wires).map(parseKeyToXY);
+        let idx = 0;
+        const step = () => {
+            const batch = tiles.slice(idx, idx + 20);
+            idx += 20;
+            for (const { x, y } of batch) {
+                const cx = (x + 0.5) * this.tileSize;
+                const cy = (y + 0.5) * this.tileSize;
+                const p = this.scene.add.circle(cx, cy, this.tileSize * 0.35, 0x99ddff, 0.8);
+                p.setBlendMode(Phaser.BlendModes.ADD).setDepth(1230);
+                this.overlay.add(p);
+                this.scene.tweens.add({
+                    targets: p, alpha: 0, duration: 220, onComplete: () => p.destroy()
+                });
+            }
+            if (idx < tiles.length) this.scene.time.delayedCall(60, step);
+            else if (onDone) onDone();
+        };
+        step();
+    }
+
+    /** 다중 램프 동시(Δt ≤ 0.5s) 점등 판정 후, 조건을 만족하는 꽃 그룹만 제거 */
+    private tryTriggerMultiLampFlowers(): void {
+        const now = this.scene.time.now;
+
+        for (const g of this.flowerGroups) {
+            if (g.cleared) continue;
+            if (!g.required.size) continue; // 연결된 램프가 없으면 건너뜀
+
+            // 필요한 모든 램프의 최근 점등 시각이 존재하고, 서로 0.5s 이내인지 확인
+            let minT = Infinity, maxT = -Infinity;
+            for (const id of g.required) {
+                const t = this.lampActivatedAt.get(id);
+                if (t === undefined) { minT = Infinity; break; }
+                if (t < minT) minT = t;
+                if (t > maxT) maxT = t;
+            }
+            if (minT === Infinity) continue;
+
+            if (maxT - minT <= this.simultaneousWindowMs) {
+                // ── 1) 이 꽃 그룹이 요구하는 모든 "램프 클러스터"를 한꺼번에 켠다 (off → 숨김)
+                for (const id of g.required) {
+                    const cluster = this.lampClusters.find(c => c.id === id);
+                    if (!cluster) continue;
+                    this.revealLampCluster(cluster);              // off 레이어 타일 숨김
+                }
+
+                // ── 2) 꽃 그룹 제거
+                g.cleared = true;
+                for (const tile of g.tiles) {
+                    const cx = (tile.x + 0.5) * this.tileSize;
+                    const cy = (tile.y + 0.5) * this.tileSize;
+                    const glow = this.scene.add.circle(cx, cy, this.tileSize * 0.45, 0xffffff, 0.95);
+                    glow.setBlendMode(Phaser.BlendModes.ADD).setDepth(1260);
+                    this.overlay.add(glow);
+                    this.scene.tweens.add({ targets: glow, alpha: 0, duration: 380, onComplete: () => glow.destroy() });
+
+                    this.hideTileFromLayer(this.flowersOffLayerName, tile.x, tile.y);
+                }
+            }
+
+        }
+    }
+
+
+
+    /** (구버전 호환) 전체 램프를 하나의 센서로 만들던 방식은 더 이상 사용하지 않음.
+     *  대신 buildLampClustersFromLampTiles()에서 클러스터별 센서를 생성한다.
+     *  (함수는 남겨두되, 아무 것도 하지 않게 유지) */
+    private createLampSensor(): void {
+        // no-op (cluster sensors are created in buildLampClustersFromLampTiles)
+    }
+
 
 
     /** 점등 → 와이어 파동 → 꽃 트리거 */
