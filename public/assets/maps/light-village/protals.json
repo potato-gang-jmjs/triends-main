@@ -4,6 +4,12 @@
     "area": { "x": 33, "y": 3, "width": 2, "height": 2 },
     "target": { "mapId": "main", "spawn": { "x": 30, "y": 61 } },
     "options": { "fadeMs": 400, "color": 65280 }
+  },
+  {
+    "id": "to_light_village_02",
+    "area": { "x": 93, "y": 59, "width": 2, "height": 2 },
+    "target": { "mapId": "light-village-2", "spawn": { "x": 4, "y": 84 } },
+    "options": { "fadeMs": 400, "color": 65280 }
   }
 ]
 
